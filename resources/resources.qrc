@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/">
+        <file>img/logo.png</file>
+        <file>icon/icon.png</file>
+        <file>icon/minus.png</file>
+        <file>icon/plus.png</file>
+        <file>icon/checkbox_off.png</file>
+        <file>icon/checkbox_on.png</file>
+    </qresource>
+</RCC>
