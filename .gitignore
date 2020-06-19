@@ -1,4 +1,3 @@
-
 # Created by https://www.toptal.com/developers/gitignore/api/c++,qt,cmake,visualstudio,windows
 # Edit at https://www.toptal.com/developers/gitignore?templates=c++,qt,cmake,visualstudio,windows
 
@@ -156,6 +155,7 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+[Bb]uild/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
