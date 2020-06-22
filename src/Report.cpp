@@ -1,31 +1,24 @@
 #include "Report.h"
 #include "ReportDelegate.h"
+#include "sqltools.h"
 #include "tools.h"
 #include <QByteArray>
 #include <QDate>
 #include <QFile>
 #include <QFontMetrics>
 #include <QHeaderView>
+#include <QPair>
+#include <QSql>
 #include <QStringList>
 #include <QTextStream>
 #include <QTime>
-#include <QPair>
+#include <boost/graph/breadth_first_search.hpp>
+#include "boost/array.hpp"
 
-QString Item::statusToQStr(const Item::Status stat) {
-  switch (stat) {
-  case Item::Status::Ok:
-    return QString("OK");
-  case Item::Status::Open:
-    return QString("Open");
-  case Item::Status::Short:
-    return QString("Short");
-  case Item::Status::Error:
-    return QString("Error");
-  }
-}
+using namespace rep;
 
 QTableWidget *Report::createTableWidget(QWidget *parent, QSize size) {
-  int rowCount = 9 + items.size(), columnCount = 2;
+  int rowCount = 9 + circuits.size(), columnCount = 2;
 
   QTableWidget *table = new QTableWidget(rowCount, columnCount, parent);
   table->setGeometry(0, 0, size.width(), size.height());
@@ -65,19 +58,27 @@ QTableWidget *Report::createTableWidget(QWidget *parent, QSize size) {
   QVector<QPair<QString, QString>> errorStrings;
   bool internalError = false;
   int rowIndex = 8;
-  auto i = items.constBegin();
-  while (i != items.constEnd()) {
-    for (auto& j : i.value()) {
-      if (j.stat != Item::Status::Ok){
+  auto i = circuits.constBegin();
+  while (i != circuits.constEnd()) {
+    for (auto &j : i.value()) {
+      edge_t e = boost::edge(j.first, j.second, graph).first;
+      auto status = boost::get(&Edge::status, graph, e);
+      if (status != Status::Ok) {
         internalError = true;
-        for (auto& k : j.relations) {
-          if (k.stat != Item::Status::Ok)
-            errorStrings.push_back(QPair(Item::statusToQStr(k.stat), j.name + " <---> " + k.name));
+        typename boost::graph_traits<Graph>::out_edge_iterator out_i, out_end;
+        for (std::tie(out_i, out_end) = boost::out_edges(j.first, graph);
+             out_i != out_end; out_i++) {
+          auto stat = boost::get(&Edge::status, graph, *out_i);
+          if (stat != Status::Ok)
+            errorStrings.push_back(
+                QPair(statusToQStr(stat),
+                      graph[j.first].name + " <---> " + graph[j.second].name));
         }
       }
     }
-    addRow(table, rowIndex, RU("Цепь № ") + QString::number(i.key()), internalError ? Item::statusToQStr(Item::Status::Error)
-               : Item::statusToQStr(Item::Status::Ok));
+    addRow(table, rowIndex, RU("Цепь № ") + QString::number(i.key()),
+           internalError ? statusToQStr(Status::Error)
+                         : statusToQStr(Status::Ok));
     rowIndex++;
     if (internalError)
       error = true;
@@ -86,16 +87,15 @@ QTableWidget *Report::createTableWidget(QWidget *parent, QSize size) {
   }
 
   addRow(table, rowCount - 1, RU("Результат проверки"),
-         error ? Item::statusToQStr(Item::Status::Error)
-               : Item::statusToQStr(Item::Status::Ok));
+         error ? statusToQStr(Status::Error) : statusToQStr(Status::Ok));
   if (error) {
     table->setRowCount(++rowCount);
     addRow(table, rowCount - 1, RU("Неисправности"), RU("Разъём, контакт"));
     for (auto &i : errorStrings) {
-        table->setRowCount(++rowCount);
-        addRow(table, rowCount - 1,  i.first, i.second);
-      }
+      table->setRowCount(++rowCount);
+      addRow(table, rowCount - 1, i.first, i.second);
     }
+  }
 
   return table;
 }
@@ -151,14 +151,13 @@ bool Report::createZplLabel(const QString &file, QByteArray &buf) {
                      .arg(pn)
                      .arg(date)
                      .arg(time);
-  auto isoDate(date);   
+  auto isoDate(date);
   isoDate.replace('.', '-');
-  buf.replace(
-      "${NUM}",
+  buf.replace("${NUM}",
               QString::number(curNum).rightJustified(6, '0').toUtf8().data());
   buf.replace("${PROD}", pn.toUtf8().data());
-  buf.replace("${DATE}", isoDate.toUtf8().data());  
-  buf.replace("${TIME}", time.toUtf8().data()); 
+  buf.replace("${DATE}", isoDate.toUtf8().data());
+  buf.replace("${TIME}", time.toUtf8().data());
   auto first = buf.indexOf("${C}");
   auto second = buf.indexOf("{/C}");
   buf.replace(first, second - first + 4, code.toUtf8().data());
@@ -170,4 +169,97 @@ void Report::addRow(QTableWidget *table, int row, QString str1, QString str2) {
   table->setItem(row, 0, item1);
   QTableWidgetItem *item2 = new QTableWidgetItem(str2);
   table->setItem(row, 1, item2);
+}
+
+bool Report::fill() {
+  QSqlQuery q;
+
+  int tableId{-1};
+  if (!q.exec(QString("SELECT id, name FROM products WHERE name = \'%1\'")
+                  .arg(prodName)))
+    Sql::showSqlError(q.lastError());
+  else {
+    while (q.next()) {
+      QString s = q.value(1).toString();
+      if (q.value(1).toString() == prodName) {
+        tableId = q.value(0).toInt();
+        break;
+      }
+    }
+  }
+
+  if (tableId == -1)
+    return false;
+
+  graph.clear();
+  circuits.clear();
+  pins.clear();
+  if (!q.exec(QString("SELECT id, num, nameFrom, circuitFrom, pinFrom, nameTo, "
+                      "circuitTo, "
+                      "pinTo FROM circuits%1 ORDER "
+                      "BY id")
+                  .arg(tableId)))
+    Sql::showSqlError(q.lastError());
+  while (q.next()) {
+    char pinFrom = static_cast<char>(q.value(4).toInt());
+    char pinTo = static_cast<char>(q.value(7).toInt());
+    vertex_t v1 = boost::add_vertex(
+        Vertex{q.value(2).toString(), q.value(3).toInt(), pinFrom}, graph);
+    vertex_t v2 = boost::add_vertex(
+        Vertex{q.value(5).toString(), q.value(6).toInt(), pinTo}, graph);
+    boost::add_edge(v1, v2, graph);
+    circuits[q.value(1).toInt()].push_back(QPair(v1, v2));
+    pins[pinFrom] = v1;
+    pins[pinTo] = v2;
+  }
+  return true;
+}
+
+bool rep::Report::checkAll(SerialPort &port) {
+  QByteArray rb, wb;
+  const char cb[] = {0x23, 0x55, 0x48};
+  for (auto &i : circuits) {
+    for (auto &k : i) {
+      wb.clear();
+      wb.append(cb);
+      wb += graph[k.first].pin;
+      wb += graph[k.second].pin;
+      int attempt{};
+      do {
+        if (attempt == 3) {
+          // TODO:
+          return false;
+        }
+        port.write(wb.data(), wb.size());
+        port.read(rb.data(), 255);
+        attempt++;
+        QThread::msleep(50);
+      } while (!rb.startsWith(wb.left(4)));
+      for (int j = 4; j < rb.size(); j++) {
+        vertex_t v = pins[rb.at(j)];
+        auto [e, exist] = boost::edge(k.first, v, graph);
+        bool found{false};
+        if (!exist) {
+          boost::array<vertex_t, 256> predecessors;
+          predecessors[k.first] = k.first;
+          boost::breadth_first_search(
+              graph, k.first,
+              boost::visitor(boost::make_bfs_visitor(boost::record_predecessors(
+                  predecessors.begin(), boost::on_tree_edge{}))));
+          for (auto &n : predecessors)
+            if (n == v) {
+              found = true;
+              break;
+            }
+          if (!found) {
+            boost::add_edge(k.first, v, Edge{Status::Short}, graph);
+          }
+        }
+        if (exist || found) {
+          boost::add_edge(k.first, v, Edge{Status::Ok}, graph);
+        }
+      }
+    }
+  }
+  return true;
 }

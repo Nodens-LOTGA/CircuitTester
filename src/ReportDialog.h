@@ -13,7 +13,7 @@ class ReportDialog : public QDialog {
   Q_OBJECT
 
 public:
-  ReportDialog(Report &report, QWidget *parent = nullptr);
+  ReportDialog(rep::Report &report, QWidget *parent = nullptr);
   ~ReportDialog();
 
 
@@ -23,5 +23,5 @@ private slots:
 
 private:
   Ui::ReportDialog *ui;
-  Report report;
+  rep::Report report;
 };
