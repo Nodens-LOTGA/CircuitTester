@@ -1,10 +1,13 @@
 #include "settingsdialog.h"
 #include "./ui_settingsdialog.h"
+#include "CircuitInputDialog.h"
 #include "CircuitsDelegate.h"
+#include "ProductInputDialog.h"
 #include "Report.h"
 #include "Settings.h"
 #include "sqltools.h"
 #include "tools.h"
+#include <QComboBox>
 #include <QDialog>
 #include <QFileDialog>
 #include <QFontDialog>
@@ -14,8 +17,6 @@
 #include <QPrinterInfo>
 #include <QSettings>
 #include <QStringList>
-#include <QComboBox>
-#include "ProductInputDialog.h"
 
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent), ui(new Ui::SettingsDialog) {
@@ -23,8 +24,10 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
   connect(ui->okPB, SIGNAL(clicked()), this, SLOT(tryAccept()));
   connect(ui->cancelPB, SIGNAL(clicked()), this, SLOT(reject()));
-  connect(ui->setLabelPrinterPB, SIGNAL(clicked()), this, SLOT(setLabelPrinter()));
-  connect(ui->setReportPrinterPB, SIGNAL(clicked()), this, SLOT(setReportPrinter()));
+  connect(ui->setLabelPrinterPB, SIGNAL(clicked()), this,
+          SLOT(setLabelPrinter()));
+  connect(ui->setReportPrinterPB, SIGNAL(clicked()), this,
+          SLOT(setReportPrinter()));
   connect(ui->reportDirTB, SIGNAL(clicked()), this, SLOT(setReportDir()));
   connect(ui->addTB, SIGNAL(clicked()), this, SLOT(addItem()));
   connect(ui->delTB, SIGNAL(clicked()), this, SLOT(delItem()));
@@ -37,7 +40,8 @@ SettingsDialog::SettingsDialog(QWidget *parent)
   connect(ui->delProdTB, SIGNAL(clicked()), this, SLOT(delProd()));
   connect(ui->prodNameCB, SIGNAL(currentIndexChanged(int)),
           SLOT(populateTable()));
- 
+  connect(ui->editTB, SIGNAL(clicked()), this, SLOT(editItem));
+
   loadSettings(Settings());
 
   updateProducts();
@@ -104,23 +108,24 @@ void SettingsDialog::addItem() {
   int tableId = ui->prodNameCB->currentData().toInt();
   if (!q.prepare(Sql::insertCircuitsSql(tableId)))
     Sql::showSqlError(q.lastError());
-  if (model.rowCount() == 0)
-    Sql::addItem(q, 1, "X1", 1, 1, "X2", 1, 1);
-  else {
-    if (!q.exec(QString("SELECT id, num, nameFrom, circuitFrom, pinFrom FROM "
-                        "circuits%1 ORDER BY id")
-                    .arg(tableId)))
-      Sql::showSqlError(q.lastError());
-    q.last();
-    int id = q.value(0).toInt();
-    int num = q.value(1).toInt();
-    QString name = q.value(2).toString();
-    int circuit = q.value(3).toInt();
-    int pin = q.value(4).toInt();
-    if (!q.prepare(Sql::insertCircuitsSql(tableId)))
-      Sql::showSqlError(q.lastError());
-    Sql::addItem(q, num, name, circuit, pin, "X1", 1, 1);
-  }
+  
+  CircuitInputDialog dialog(tableId, this);
+
+  if (!dialog.result() == QDialog::Accepted)
+    return;
+
+  auto id = dialog.id;
+  auto n = dialog.num;
+  auto nFrom = dialog.nameFrom;
+  auto cFrom = dialog.circuitFrom;
+  auto pFrom = dialog.pinFrom;
+  auto nTo = dialog.nameTo;
+  auto cTo = dialog.circuitTo;
+  auto pTo = dialog.pinTo;
+
+  if (!q.prepare(Sql::insertCircuitsSql(tableId)))
+    Sql::showSqlError(q.lastError());
+  Sql::addItem(q, n, nFrom, cFrom, pFrom, nTo, cTo, pTo);
   if (!model.submitAll())
     Sql::showSqlError(q.lastError());
   model.select();
@@ -148,7 +153,7 @@ void SettingsDialog::populateTable() {
   int id = ui->prodNameCB->currentData().toInt();
   model.setTable("circuits" + QString::number(id));
   model.setEditStrategy(QSqlTableModel::OnFieldChange);
-  //TODO:
+  // TODO:
   model.setHeaderData(0, Qt::Horizontal, RU("№"));
   model.setHeaderData(1, Qt::Horizontal, RU("№ Цепи"));
   model.setHeaderData(2, Qt::Horizontal, RU("Колодка"));
@@ -161,9 +166,10 @@ void SettingsDialog::populateTable() {
   model.select();
 
   ui->circuitTV->setModel(&model);
-  //ui->circuitTV->verticalHeader()->setVisible(false);
+  // ui->circuitTV->verticalHeader()->setVisible(false);
   ui->circuitTV->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   ui->circuitTV->setItemDelegate(new CircuitsDelegate(ui->circuitTV));
+  ui->circuitTV->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
   prodName = ui->prodNameCB->currentText();
 }
@@ -203,7 +209,7 @@ void SettingsDialog::changeAdminPass() {
           this, RU("Неверный пароль"),
           RU("Пароль должен состоять не менее чем из 8 символов"));
       return;
-    } else 
+    } else
       adminPass = newPass;
 }
 
@@ -222,14 +228,17 @@ void SettingsDialog::addProd() {
                             prodName.section(" ", 1, 1), this);
   dialog.exec();
 
-  QString newProd = dialog.art + " " + dialog.name;
+  
 
   if (!dialog.result() == QDialog::Accepted)
     return;
 
+  QString newProd = dialog.art + " " + dialog.name;
+
   QSqlQuery q;
 
-  if (!q.exec(QString("SELECT id, name FROM products WHERE name = \'%1\'").arg(newProd)))
+  if (!q.exec(QString("SELECT id, name FROM products WHERE name = \'%1\'")
+                  .arg(newProd)))
     Sql::showSqlError(q.lastError());
   else {
     while (q.next()) {
@@ -291,4 +300,39 @@ void SettingsDialog::updateProducts() {
       lastProdIndex = ui->prodNameCB->count() - 1;
   }
   ui->prodNameCB->setCurrentIndex(lastProdIndex);
+}
+
+void SettingsDialog::editItem() {
+  if (ui->prodNameCB->currentText() == "") {
+    QMessageBox::warning(this, RU("Ошибка при добавление цепи"),
+                         RU("Необходимо выбрать продукт"));
+    return;
+  }
+  QSqlQuery q;
+  int tableId = ui->prodNameCB->currentData().toInt();
+  if (!q.prepare(Sql::insertCircuitsSql(tableId)))
+    Sql::showSqlError(q.lastError());
+
+  CircuitInputDialog dialog(tableId, this);
+
+  if (!dialog.result() == QDialog::Accepted)
+    return;
+
+  auto id = dialog.id;
+  auto n = dialog.num;
+  auto nFrom = dialog.nameFrom;
+  auto cFrom = dialog.circuitFrom;
+  auto pFrom = dialog.pinFrom;
+  auto nTo = dialog.nameTo;
+  auto cTo = dialog.circuitTo;
+  auto pTo = dialog.pinTo;
+
+  if (!dialog.result() == QDialog::Accepted)
+    return;
+
+  if (!q.prepare(Sql::updateCircuitSql(tableId, id, n, nFrom, cFrom, pFrom, nTo, cTo, pTo)))
+    Sql::showSqlError(q.lastError());
+  if (!model.submitAll())
+    Sql::showSqlError(q.lastError());
+  model.select();
 }

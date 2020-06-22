@@ -9,6 +9,9 @@ void addItem(QSqlQuery &q, int num, const QString &nameFrom, int circuitFrom,
 
 QString circuitsSql(int id);
 QString insertCircuitsSql(int id);
+QString updateCircuitSql(int id, int circuitId, int num,
+                         const QString &nameFrom, int circuitFrom, int pinFrom,
+                         const QString &nameTo, int circuitTo, int pinTo);
 QString productsSql();
 QString insertProductsSql();
 

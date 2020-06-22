@@ -289,6 +289,17 @@
          </property>
         </widget>
        </item>
+       <item>
+        <widget class="QToolButton" name="editTB">
+         <property name="text">
+          <string>...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="../resources/resources.qrc">
+           <normaloff>:/icon/edit.png</normaloff>:/icon/edit.png</iconset>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
      <item>

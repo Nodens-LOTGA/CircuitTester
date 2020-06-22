@@ -6,5 +6,6 @@
         <file>icon/plus.png</file>
         <file>icon/checkbox_off.png</file>
         <file>icon/checkbox_on.png</file>
+        <file>icon/edit.png</file>
     </qresource>
 </RCC>

@@ -15,14 +15,37 @@ void Sql::addItem(QSqlQuery &q, int num, const QString &nameFrom,
 }
 
 QString Sql::circuitsSql(int id) {
-  return QString("create table circuits%1(id integer primary key, num integer, "
-              "nameFrom varchar, circuitFrom integer, pinFrom integer, nameTo "
-              "varchar, circuitTo integer, pinTo integer)")
-          .arg(id);
+  return QString(
+             "create table circuits%1(id integer primary key, num integer, "
+             "nameFrom varchar, circuitFrom integer, pinFrom integer, nameTo "
+             "varchar, circuitTo integer, pinTo integer)")
+      .arg(id);
 }
 
 QString Sql::insertCircuitsSql(int id) {
-  return QString("insert into circuits%1(num, nameFrom, circuitFrom, pinFrom, nameTo, circuitTo, pinTo) values(?, ?, ?, ?, ?, ?, ?)").arg(id).toLatin1();
+  return QString("insert into circuits%1(num, nameFrom, circuitFrom, pinFrom, "
+                 "nameTo, circuitTo, pinTo) values(?, ?, ?, ?, ?, ?, ?)")
+      .arg(id)
+      .toLatin1();
+}
+
+QString Sql::updateCircuitSql(int id, int circuitId, int num,
+                              const QString &nameFrom, int circuitFrom,
+                              int pinFrom, const QString &nameTo, int circuitTo,
+                              int pinTo) {
+  return QString("update circuits%1 set id = %2, num = %3, nameFrom = %4, "
+                 "circuitFrom = %5, pinFrom = %6, nameTo = %7, circuitTo = %8, "
+                 "pinTo = %9 where id = %2")
+      .arg(id)
+      .arg(circuitId)
+      .arg(num)
+      .arg(nameFrom)
+      .arg(circuitFrom)
+      .arg(pinFrom)
+      .arg(nameTo)
+      .arg(circuitTo)
+      .arg(pinTo)
+      .toLatin1();
 }
 
 QString Sql::productsSql() {
