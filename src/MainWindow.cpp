@@ -84,12 +84,17 @@ void MainWindow::initSql() {
 void MainWindow::start() {
   ui->dateL->setText(QDate::currentDate().toString("dd.MM.yyyy"));
 
-  if (!fillItems())
-    return;
+  rep::Report report(curNum, prodName, workerName);
 
+  if (!report.fill()) {
+    QMessageBox::warning(this, RU("Ошибка при создание отчёта"),
+                         RU("Не выбрана таблица цепей"));
+    return;
+  }
+
+  //report.checkAll(port);
   // TODO:
 
-  Report report(circuits, curNum, prodName, workerName);
   QString dir = reportDir;
   if (!QDir(dir).exists())
     QDir().mkdir(dir);
@@ -135,58 +140,6 @@ void MainWindow::help() {
   helpDialog.exec();
 }
 
-bool MainWindow::fillItems() {
-  QSqlQuery q;
-
-  int tableId{-1};
-  if (!q.exec(QString("SELECT id, name FROM products WHERE name = \'%1\'")
-                  .arg(prodName)))
-    Sql::showSqlError(q.lastError());
-  else {
-    while (q.next()) {
-      QString s = q.value(1).toString();
-      if (q.value(1).toString() == prodName) {
-        tableId = q.value(0).toInt();
-        break;
-      }
-    }
-  }
-
-  if (tableId == -1) {
-    QMessageBox::warning(this, RU("Ошибка при создание отчёта"),
-                         RU("Не выбрана таблица цепей"));
-    return false;
-  }
-
-  pinRelations.clear();
-  circuits.clear();
-  if (!q.exec(QString("SELECT id, num, nameFrom, circuitFrom, pinFrom, nameTo, "
-                      "circuitTo, "
-                      "pinTo FROM circuits%1 ORDER "
-                      "BY id")
-                  .arg(tableId)))
-    Sql::showSqlError(q.lastError());
-  while (q.next()) {
-    Item item;
-    item.circuitNum = q.value(1).toInt();
-    item.name = q.value(2).toString();
-    item.circuit = q.value(3).toInt();
-    item.pin = q.value(4).toInt();
-    Item relation;
-    relation.name = q.value(5).toString();
-    relation.circuit = q.value(6).toInt();
-    relation.pin = q.value(7).toInt();
-    item.relations.push_back(relation);
-    circuits[item.circuitNum].push_back(item);
-    pinRelations[item.pin].push_back(relation.pin);
-    if (!items.contains(item.pin))
-      items[item.pin] = item;
-    if (!items.contains(relation.pin))
-      items[relation.pin] = relation;
-  }
-  return true;
-}
-
 void MainWindow::loadSettings() {
   Settings sett;
 
@@ -203,39 +156,4 @@ void MainWindow::loadSettings() {
   ui->prodNameL->setText(prodName);
   reportPrinterName = sett.reportPrinterName;
   labelPrinterName = sett.labelPrinterName;
-}
-
-void MainWindow::checkCircuits() {
-  QByteArray rb, wb;
-  const char cb[] = {0x23, 0x55, 0x48};
-  for (auto &i : circuits) {
-    for (auto &k : i) {
-      wb.clear();
-      wb.append(cb);
-      wb += k.pin;
-      wb += k.relations[0].pin;
-      int attempt{};
-      do {
-        if (attempt == 3) {
-          //TODO:
-          return;
-        }    
-        QThread::sleep(1);
-        port.write(wb.data(), wb.size());
-        port.read(rb.data(), 255);
-      } while (!rb.startsWith(wb.chopped(4)));
-      for (int j = 4; j < rb.size(); j++) {
-        if (rb.at(j) == k.relations[0].pin)
-          break;
-        else if (pinRelations.value(k.pin).contains(rb.at(j))) {
-          k.stat = Item::Status::Error;
-          Item item = items.value(rb.at(j));
-          item.stat = Item::Status::Short;
-          k.relations.push_back(item);
-        } else {
-          k.stat = Item::Status::Open;
-        }
-      }
-    }
-  }
 }

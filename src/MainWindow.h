@@ -6,7 +6,6 @@
 #include <QMainWindow>
 #include <QPrinter>
 #include "Report.h"
-#include <boost/graph/adjacency_list.hpp>
 #ifdef Q_OS_WIN
 #include "SerialPort.h"
 #endif
@@ -31,9 +30,7 @@ private slots:
   void exit();
   void settings();
   void help();
-  bool fillItems();
   void loadSettings();
-  void checkCircuits();
 
 private:
   Ui::MainWindow *ui;
@@ -42,8 +39,5 @@ private:
   int curNum{1};
   QString prodName{}, reportDir{}, workerName{}, labelPrinterName{},
       reportPrinterName{};
-  QMap<int, QVector<Item>> circuits;
-  QMap<char, QVector<char>> pinRelations;
-  QMap<int, Item> items;
 };
 #endif // MAINWINDOW_H

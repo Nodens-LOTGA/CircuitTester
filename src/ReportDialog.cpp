@@ -9,7 +9,7 @@
 #include <QPrinter>
 #include <QPrinterInfo>
 
-ReportDialog::ReportDialog(Report &report, QWidget *parent)
+ReportDialog::ReportDialog(rep::Report &report, QWidget *parent)
     : QDialog(parent), ui(new Ui::ReportDialog) {
   ui->setupUi(this);
 
@@ -68,8 +68,9 @@ void ReportDialog::printReport() {
   QPrinter printer(printerInfo);
   printer.setPageSize(QPageSize(QPageSize::A4));
   QRect pageSize = printer.pageLayout().paintRectPixels(printer.resolution());
-  auto table = report.createTableWidget(nullptr, pageSize.size());
-  table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  QSize size = pageSize.size();
+  auto table = report.createTableWidget(nullptr, size);
+  //table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   table->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   table->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
