@@ -35,6 +35,7 @@ private slots:
   void addProd();
   void delProd();
   void updateProducts();
+  void editItem();
 
 private:
   Ui::SettingsDialog *ui;

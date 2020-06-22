@@ -54,7 +54,7 @@ add_executable (${PROJECT_NAME}
   productinputdialog.h
   productinputdialog.cpp
   ../resources/resources.qrc
- )
+  "CircuitInputDialog.h" "CircuitInputDialog.cpp")
 
 
 #set_property(TARGET ${PROJECT_NAME} PROPERTY WIN32_EXECUTABLE true)
