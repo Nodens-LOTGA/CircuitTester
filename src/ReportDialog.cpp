@@ -19,13 +19,15 @@ ReportDialog::ReportDialog(rep::Report &report, QWidget *parent)
 
   this->report = report;
   ui->printLabelPB->setDisabled(report.hasError());
-  auto table = report.createTableWidget(this, QSize(800, 800));
+  auto table = report.createTableWidget(this, QSize(778, 800));
   table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-  table->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  //table->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   table->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   table->setParent(ui->tableF);
   ui->gridLayout_2->addWidget(table);
   setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
+  setWindowTitle(RU("Отчёт. Результат: ") + (report.hasError() ? RU("Успех")
+                                                              : RU("Ошибка")));
 }
 
 ReportDialog::~ReportDialog() { delete ui; }

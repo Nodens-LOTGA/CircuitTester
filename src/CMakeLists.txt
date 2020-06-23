@@ -51,10 +51,17 @@ add_executable (${PROJECT_NAME}
   settings.cpp
   reportdialog.h
   reportdialog.cpp
+  reportdialog.ui
   productinputdialog.h
   productinputdialog.cpp
+  productinputdialog.ui
+  userslistdialog.h
+  userslistdialog.cpp
+  userslistdialog.ui
+  spinboxdelegate.h
+  spinboxdelegate.cpp
   ../resources/resources.qrc
-  "CircuitInputDialog.h" "CircuitInputDialog.cpp")
+)
 
 
 #set_property(TARGET ${PROJECT_NAME} PROPERTY WIN32_EXECUTABLE true)

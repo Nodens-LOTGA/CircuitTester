@@ -35,8 +35,8 @@ QCheckBox::indicator:checked {
     image: url(:/icon/checkbox_on.png);
 }
 QPushButton {
-	min-height: 64px;
-	min-width: 64px;
+	min-height: 100px;
+	min-width: 100px;
 	padding: 16px;
 }
 QComboBox {
@@ -46,21 +46,24 @@ QToolButton {
 	width:32px; 
 	height: 32px;
 }
-* {font-size: 24px}</string>
+* {
+	font-family: &quot;Verdana&quot;;
+	font-size: 24px;
+}</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_6">
     <property name="leftMargin">
-     <number>2</number>
+     <number>11</number>
     </property>
     <property name="topMargin">
-     <number>2</number>
+     <number>11</number>
     </property>
     <property name="rightMargin">
-     <number>2</number>
+     <number>11</number>
     </property>
     <property name="bottomMargin">
-     <number>2</number>
+     <number>11</number>
     </property>
     <property name="spacing">
      <number>2</number>
@@ -262,47 +265,17 @@ QToolButton {
          <number>0</number>
         </property>
         <item>
-         <layout class="QVBoxLayout" name="verticalLayout_4">
-          <property name="spacing">
-           <number>0</number>
+         <widget class="QPushButton" name="helpB">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
           </property>
-          <item>
-           <spacer name="verticalSpacer_8">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item alignment="Qt::AlignLeft|Qt::AlignBottom">
-           <widget class="QLabel" name="i_saveDirL">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">font: 14pt &quot;MS Shell Dlg 2&quot;;</string>
-            </property>
-            <property name="text">
-             <string>Директория сохранения отчёта:</string>
-            </property>
-           </widget>
-          </item>
-          <item alignment="Qt::AlignLeft|Qt::AlignBottom">
-           <widget class="QLabel" name="saveDirL">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="text">
-             <string> - </string>
-            </property>
-           </widget>
-          </item>
-         </layout>
+          <property name="text">
+           <string>Справка</string>
+          </property>
+         </widget>
         </item>
         <item alignment="Qt::AlignRight|Qt::AlignBottom">
          <widget class="QPushButton" name="settingsB">
@@ -473,19 +446,6 @@ QToolButton {
           <property name="text">
            <string>Завершение
 работы</string>
-          </property>
-         </widget>
-        </item>
-        <item alignment="Qt::AlignLeft|Qt::AlignBottom">
-         <widget class="QPushButton" name="helpB">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Справка</string>
           </property>
          </widget>
         </item>
