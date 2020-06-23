@@ -1,6 +1,6 @@
 #pragma once
 #include <QStyledItemDelegate>
-class CircuitsDelegate : public QStyledItemDelegate {
+class SpinBoxDelegate : public QStyledItemDelegate {
   Q_OBJECT
 
 public:
@@ -15,6 +15,4 @@ public:
 
   void updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option,
                             const QModelIndex &index) const override;
-
-  mutable QList<int> pins, circuits;
 };

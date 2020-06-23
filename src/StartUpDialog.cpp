@@ -33,6 +33,7 @@ StartUpDialog::~StartUpDialog() { delete ui; }
 void StartUpDialog::updateNames() {
   Settings sett;
   int lastUserIndex{};
+  ui->userCB->clear();
   QMap<QString, QVariant>::const_iterator i = sett.users.constBegin();
   while (i != sett.users.constEnd()) {
     ui->userCB->addItem(i.key(), i.value());

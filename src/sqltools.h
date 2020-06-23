@@ -4,14 +4,13 @@
 
 namespace Sql {
 
-void addItem(QSqlQuery &q, int num, const QString &nameFrom, int circuitFrom,
-                int pinFrom, const QString &nameTo, int circuitTo, int pinTo);
+void addCircuit(QSqlQuery &q, int pin, int circuit, const QString &name);
+void addRelation(QSqlQuery &q, int num, int pinFrom, int pinTo);
 
 QString circuitsSql(int id);
 QString insertCircuitsSql(int id);
-QString updateCircuitSql(int id, int circuitId, int num,
-                         const QString &nameFrom, int circuitFrom, int pinFrom,
-                         const QString &nameTo, int circuitTo, int pinTo);
+QString relationsSql(int id);
+QString insertRealationsSql(int id);
 QString productsSql();
 QString insertProductsSql();
 

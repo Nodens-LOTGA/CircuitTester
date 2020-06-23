@@ -1,50 +1,41 @@
 #include <sqltools.h>
 #include <tools.h>
 
-void Sql::addItem(QSqlQuery &q, int num, const QString &nameFrom,
-                  int circuitFrom, int pinFrom, const QString &nameTo,
-                  int circuitTo, int pinTo) {
+void Sql::addCircuit(QSqlQuery &q, int pin, int circuit, const QString &name) {
+  q.addBindValue(pin);
+  q.addBindValue(circuit);
+  q.addBindValue(name);
+  q.exec();
+}
+
+void Sql::addRelation(QSqlQuery &q, int num, int pinFrom, int pinTo) {
   q.addBindValue(num);
-  q.addBindValue(nameFrom);
-  q.addBindValue(circuitFrom);
   q.addBindValue(pinFrom);
-  q.addBindValue(nameTo);
-  q.addBindValue(circuitTo);
   q.addBindValue(pinTo);
   q.exec();
 }
 
 QString Sql::circuitsSql(int id) {
+  return QString("create table circuits%1(pin integer PRIMARY KEY NOT NULL, circuit integer NOT NULL, name "
+                 "varchar NOT NULL)")
+      .arg(id);
+}
+
+QString Sql::relationsSql(int id) {
   return QString(
-             "create table circuits%1(id integer primary key, num integer, "
-             "nameFrom varchar, circuitFrom integer, pinFrom integer, nameTo "
-             "varchar, circuitTo integer, pinTo integer)")
+             "create table relations%1(id INTEGER PRIMARY KEY NOT NULL, num integer NOT NULL, "
+             "pinFrom integer NOT NULL, pinTo integer NOT NULL, FOREIGN KEY (pinFrom) REFERENCES "
+             "circuits%1(pin) ON DELETE CASCADE, FOREIGN KEY (pinTo) REFERENCES circuits%1(pin) ON DELETE CASCADE)")
       .arg(id);
 }
 
 QString Sql::insertCircuitsSql(int id) {
-  return QString("insert into circuits%1(num, nameFrom, circuitFrom, pinFrom, "
-                 "nameTo, circuitTo, pinTo) values(?, ?, ?, ?, ?, ?, ?)")
-      .arg(id)
-      .toLatin1();
+  return QString("insert into circuits%1(pin, circuit, name) values(?, ?, ?)").arg(id).toLatin1();
 }
 
-QString Sql::updateCircuitSql(int id, int circuitId, int num,
-                              const QString &nameFrom, int circuitFrom,
-                              int pinFrom, const QString &nameTo, int circuitTo,
-                              int pinTo) {
-  return QString("update circuits%1 set id = %2, num = %3, nameFrom = %4, "
-                 "circuitFrom = %5, pinFrom = %6, nameTo = %7, circuitTo = %8, "
-                 "pinTo = %9 where id = %2")
+QString Sql::insertRealationsSql(int id) {
+  return QString("insert into relations%1(num, pinFrom, pinTo) values(?, ?, ?)")
       .arg(id)
-      .arg(circuitId)
-      .arg(num)
-      .arg(nameFrom)
-      .arg(circuitFrom)
-      .arg(pinFrom)
-      .arg(nameTo)
-      .arg(circuitTo)
-      .arg(pinTo)
       .toLatin1();
 }
 
@@ -72,6 +63,9 @@ QSqlError Sql::initDb() {
     return q.lastError();
 
   if (!q.prepare(insertProductsSql()))
+    return q.lastError();
+
+  if (!q.exec("PRAGMA foreign_keys = ON;"))
     return q.lastError();
 
   return QSqlError();

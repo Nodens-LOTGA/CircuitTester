@@ -1,4 +1,4 @@
-#include "Report.h"
+п»ї#include "Report.h"
 #include "ReportDelegate.h"
 #include "sqltools.h"
 #include "tools.h"
@@ -43,17 +43,17 @@ QTableWidget *Report::createTableWidget(QWidget *parent, QSize size) {
   table->setRowHeight(0, img.height());
 
   QTableWidgetItem *itemHeader =
-      new QTableWidgetItem(RU("Протокол проверки жгута проводов"));
+      new QTableWidgetItem(RU("РџСЂРѕС‚РѕРєРѕР» РїСЂРѕРІРµСЂРєРё Р¶РіСѓС‚Р° РїСЂРѕРІРѕРґРѕРІ"));
   itemHeader->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
   table->setItem(1, 0, itemHeader);
 
-  addRow(table, 2, RU("Отчёт №"),
+  addRow(table, 2, RU("РћС‚С‡С‘С‚ в„–"),
          QString::number(curNum).rightJustified(6, '0'));
-  addRow(table, 3, RU("Изделие"), prodName);
-  addRow(table, 4, RU("Дата"), date);
-  addRow(table, 5, RU("Время"), time);
-  addRow(table, 6, RU("Ф.И.О"), name);
-  addRow(table, 7, RU("Замеряемые параметры"), "");
+  addRow(table, 3, RU("РР·РґРµР»РёРµ"), prodName);
+  addRow(table, 4, RU("Р”Р°С‚Р°"), date);
+  addRow(table, 5, RU("Р’СЂРµРјСЏ"), time);
+  addRow(table, 6, RU("Р¤.Р.Рћ"), name);
+  addRow(table, 7, RU("Р—Р°РјРµСЂСЏРµРјС‹Рµ РїР°СЂР°РјРµС‚СЂС‹"), "");
 
   QVector<QPair<QString, QString>> errorStrings;
   bool internalError = false;
@@ -71,12 +71,14 @@ QTableWidget *Report::createTableWidget(QWidget *parent, QSize size) {
           auto stat = boost::get(&Edge::status, graph, *out_i);
           if (stat != Status::Ok)
             errorStrings.push_back(
-                QPair(statusToQStr(stat),
-                      graph[j.first].name + " <---> " + graph[j.second].name));
+                QPair(statusToQStr(stat), graph[j.first].name + ":" +
+                                              QString::number(graph[j.first].circuit) + RU(" в‡” ") +
+                          graph[j.second].name + ":" +
+                          QString::number(graph[j.second].circuit)));
         }
       }
     }
-    addRow(table, rowIndex, RU("Цепь № ") + QString::number(i.key()),
+    addRow(table, rowIndex, RU("Р¦РµРїСЊ в„– ") + QString::number(i.key()),
            internalError ? statusToQStr(Status::Error)
                          : statusToQStr(Status::Ok));
     rowIndex++;
@@ -86,11 +88,11 @@ QTableWidget *Report::createTableWidget(QWidget *parent, QSize size) {
     i++;
   }
 
-  addRow(table, rowCount - 1, RU("Результат проверки"),
+  addRow(table, rowCount - 1, RU("Р РµР·СѓР»СЊС‚Р°С‚ РїСЂРѕРІРµСЂРєРё"),
          error ? statusToQStr(Status::Error) : statusToQStr(Status::Ok));
   if (error) {
     table->setRowCount(++rowCount);
-    addRow(table, rowCount - 1, RU("Неисправности"), RU("Разъём, контакт"));
+    addRow(table, rowCount - 1, RU("РќРµРёСЃРїСЂР°РІРЅРѕСЃС‚Рё"), RU("Р Р°Р·СЉС‘Рј, РєРѕРЅС‚Р°РєС‚"));
     for (auto &i : errorStrings) {
       table->setRowCount(++rowCount);
       addRow(table, rowCount - 1, i.first, i.second);
@@ -146,7 +148,7 @@ bool Report::createZplLabel(const QString &file, QByteArray &buf) {
     buf += f.readLine();
   }
   auto pn = prodName.section(" ", 0, 0);
-  QString code = QString(RU("Отчёт №: %1; Изделие: %2; Дата: %3; Время: %4"))
+  QString code = QString(RU("РћС‚С‡С‘С‚ в„–: %1; РР·РґРµР»РёРµ: %2; Р”Р°С‚Р°: %3; Р’СЂРµРјСЏ: %4"))
                      .arg(curNum)
                      .arg(pn)
                      .arg(date)
@@ -194,23 +196,25 @@ bool Report::fill() {
   graph.clear();
   circuits.clear();
   pins.clear();
-  if (!q.exec(QString("SELECT id, num, nameFrom, circuitFrom, pinFrom, nameTo, "
-                      "circuitTo, "
-                      "pinTo FROM circuits%1 ORDER "
-                      "BY id")
+  if (!q.exec(QString("SELECT pin, circuit, name FROM circuits%1 ORDER BY pin")
                   .arg(tableId)))
     Sql::showSqlError(q.lastError());
   while (q.next()) {
-    char pinFrom = static_cast<char>(q.value(4).toInt());
-    char pinTo = static_cast<char>(q.value(7).toInt());
-    vertex_t v1 = boost::add_vertex(
-        Vertex{q.value(2).toString(), q.value(3).toInt(), pinFrom}, graph);
-    vertex_t v2 = boost::add_vertex(
-        Vertex{q.value(5).toString(), q.value(6).toInt(), pinTo}, graph);
+    char pin = static_cast<char>(q.value(0).toInt());
+    vertex_t v = boost::add_vertex(
+        Vertex{q.value(2).toString(), q.value(1).toInt(), pin}, graph);
+    pins[pin] = v;
+  }
+  if (!q.exec(
+          QString("SELECT num, pinFrom, pinTo FROM relations%1 ORDER BY num").arg(tableId)))
+    Sql::showSqlError(q.lastError());
+  while (q.next()) {
+    char pinFrom = static_cast<char>(q.value(1).toInt());
+    char pinTo = static_cast<char>(q.value(2).toInt());
+    auto v1 = pins[pinFrom];
+    auto v2 = pins[pinTo];
     boost::add_edge(v1, v2, graph);
-    circuits[q.value(1).toInt()].push_back(QPair(v1, v2));
-    pins[pinFrom] = v1;
-    pins[pinTo] = v2;
+    circuits[q.value(0).toInt()].push_back(QPair(v1, v2));
   }
   return true;
 }

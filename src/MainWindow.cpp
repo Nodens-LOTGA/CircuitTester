@@ -12,6 +12,7 @@
 #include "winapiprint.h"
 #include <QByteArray>
 #include <QDate>
+#include <QDesktopWidget>
 #include <QHeaderView>
 #include <QImage>
 #include <QMessageBox>
@@ -22,6 +23,9 @@
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QtSql>
+
+// TODO: Добавить выбор шаблона этикетки
+//  Добавить возможноость переименования названия жгута
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -35,10 +39,6 @@ MainWindow::MainWindow(QWidget *parent)
   QCoreApplication::setOrganizationName("Ladaplast");
   QCoreApplication::setOrganizationDomain("temp.com");
   QCoreApplication::setApplicationName("Tester");
-
-  // TODO:
-  ui->i_saveDirL->hide();
-  ui->saveDirL->hide();
 
   init();
 }
@@ -92,7 +92,7 @@ void MainWindow::start() {
     return;
   }
 
-  //report.checkAll(port);
+  // report.checkAll(port);
   // TODO:
 
   QString dir = reportDir;
@@ -115,6 +115,11 @@ void MainWindow::start() {
   }
 
   ReportDialog dialog(report, this);
+  QDesktopWidget desk;
+  QRect screenres = desk.screenGeometry(0);
+  dialog.setWindowFlags(Qt::Dialog);
+  dialog.setGeometry(QRect(screenres.width() * 0.25, 40, screenres.width() / 2,
+                           screenres.height() - 45));
   dialog.exec();
 }
 
@@ -132,6 +137,11 @@ void MainWindow::exit() {
 void MainWindow::settings() {
   SettingsDialog settingsDialog(this);
   connect(&settingsDialog, SIGNAL(accepted()), this, SLOT(loadSettings()));
+  settingsDialog.setWindowState(Qt::WindowFullScreen);
+  QDesktopWidget desk;
+  QRect screenres = desk.screenGeometry(0);
+  settingsDialog.setGeometry(QRect(screenres.x(), screenres.y(),
+                                   screenres.width(), screenres.height()));
   settingsDialog.exec();
 }
 
@@ -151,7 +161,6 @@ void MainWindow::loadSettings() {
   curNum = sett.num;
   ui->chkNumL->setText(QString::number(curNum).rightJustified(6, '0'));
   reportDir = sett.reportDir;
-  ui->saveDirL->setText(reportDir);
   prodName = sett.prodName;
   ui->prodNameL->setText(prodName);
   reportPrinterName = sett.reportPrinterName;

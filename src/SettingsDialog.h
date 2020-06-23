@@ -26,7 +26,7 @@ private slots:
   void setReportDir();
   void addItem();
   void delItem();
-  void populateTable();
+  void updateTables();
   void resetSett();
   void delUsers();
   void loadSettings(Settings &sett);
@@ -35,7 +35,8 @@ private slots:
   void addProd();
   void delProd();
   void updateProducts();
-  void editItem();
+  void updateRelationsTable();
+  void updateCircuitsTable();
 
 private:
   Ui::SettingsDialog *ui;
@@ -43,5 +44,5 @@ private:
   int curNum{};
   QString reportDir{}, prodName{}, labelPrinterName{}, reportPrinterName{},
       adminPass{};
-  QSqlRelationalTableModel model;
+  QSqlRelationalTableModel circuitsModel, relationsModel;
 };
