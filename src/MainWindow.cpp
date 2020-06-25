@@ -24,8 +24,8 @@
 #include <QTableWidgetItem>
 #include <QtSql>
 
-// TODO: Добавить выбор шаблона этикетки
-//  Добавить возможноость переименования названия жгута
+//Выбор жгута пользователем
+//
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -115,11 +115,7 @@ void MainWindow::start() {
   }
 
   ReportDialog dialog(report, this);
-  QDesktopWidget desk;
-  QRect screenres = desk.screenGeometry(0);
-  dialog.setWindowFlags(Qt::Dialog);
-  dialog.setGeometry(QRect(screenres.width() * 0.25, 40, screenres.width() / 2,
-                           screenres.height() - 45));
+ 
   dialog.exec();
 }
 
@@ -137,6 +133,7 @@ void MainWindow::exit() {
 void MainWindow::settings() {
   SettingsDialog settingsDialog(this);
   connect(&settingsDialog, SIGNAL(accepted()), this, SLOT(loadSettings()));
+
   settingsDialog.setWindowState(Qt::WindowFullScreen);
   QDesktopWidget desk;
   QRect screenres = desk.screenGeometry(0);

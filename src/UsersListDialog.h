@@ -18,6 +18,8 @@ private slots:
   void delUser();
   void delAll();
   void fillUsers();
+  void editPassword();
+  void editName();
 
 private:
   Ui::UsersListDialog *ui;

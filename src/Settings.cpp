@@ -12,6 +12,7 @@ void Settings::save() {
   sett.setValue("main/userName", userName);
   sett.setValue("print/labelPrinterName", labelPrinterName);
   sett.setValue("print/reportPrinterName", reportPrinterName);
+  sett.setValue("print/label", label);
   sett.sync();
 }
 
@@ -27,6 +28,7 @@ void Settings::load() {
   loadValue("main/userName", userName);
   loadValue("print/labelPrinterName", labelPrinterName);
   loadValue("print/reportPrinterName", reportPrinterName);
+  loadValue("print/label", label);
   sett.sync();
 }
 

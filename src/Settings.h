@@ -16,6 +16,10 @@ struct Settings {
     reportPrinterName = "";
     users[adminName] = adminPass;
     userName = adminName;
+    labels = QMap<QString, QVariant>{
+        {RU("Термоэтикетка 43х25"), QString("label43x25.prn")},
+        {RU("Термоэтикетка 57х40"), QString("label57x40.prn")}};
+    label = labels.first().toString();
     if (!isDefault)
       load();
   };
@@ -27,8 +31,9 @@ struct Settings {
   bool newUsers, isAdmin;
   int num;
   QString prodName, reportDir, userName, portName, labelPrinterName,
-      reportPrinterName, adminName, adminPass;
-  QMap<QString, QVariant> users;
+      reportPrinterName, adminName, adminPass, label;
+  QMap<QString, QVariant> users, labels;
+
 private:
   template <typename T> inline void loadValue(QString valueName, T &value);
 

@@ -24,9 +24,15 @@
     <normaloff>:/icon/icon.png</normaloff>:/icon/icon.png</iconset>
   </property>
   <property name="styleSheet">
-   <string notr="true">QCheckBox::indicator {
-	width:32px;
-	height:32px;
+   <string notr="true">QLineEdit {
+	height:48px;
+}
+QSpinBox {
+    height: 48px
+}
+QCheckBox::indicator {
+	width:48px;
+	height:48px;
 }
 QCheckBox::indicator:unchecked {
     image: url(:/icon/checkbox_off.png);
@@ -40,15 +46,27 @@ QPushButton {
 	padding: 16px;
 }
 QComboBox {
-	height:32px;
+	height:48px;
 }
 QToolButton {
-	width:32px; 
-	height: 32px;
+	width:48px; 
+	height: 48px;
 }
 * {
 	font-family: &quot;Verdana&quot;;
-	font-size: 24px;
+	font-size: 32px;
+}
+QComboBox QAbstractItemView {
+    height: 48px;
+}
+QComboBox QAbstractItemView::item {
+    height: 48px;
+}
+QComboBox {
+    height: 48px;
+}
+QComboBox ::item {
+    height: 48px;
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">

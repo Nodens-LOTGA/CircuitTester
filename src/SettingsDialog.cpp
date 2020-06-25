@@ -4,6 +4,8 @@
 #include "ProductInputDialog.h"
 #include "Report.h"
 #include "Settings.h"
+#include "SpinBoxDelegate.h"
+#include "UsersListDialog.h"
 #include "sqltools.h"
 #include "tools.h"
 #include <QComboBox>
@@ -17,8 +19,6 @@
 #include <QSettings>
 #include <QSpinBox>
 #include <QStringList>
-#include "UsersListDialog.h"
-#include "SpinBoxDelegate.h"
 
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent), ui(new Ui::SettingsDialog) {
@@ -33,8 +33,6 @@ SettingsDialog::SettingsDialog(QWidget *parent)
   connect(ui->reportDirTB, SIGNAL(clicked()), this, SLOT(setReportDir()));
   connect(ui->resetSettPB, SIGNAL(clicked()), this, SLOT(resetSett()));
   connect(ui->delUsersPB, SIGNAL(clicked()), this, SLOT(delUsers()));
-  connect(ui->changeAdminPassPB, SIGNAL(clicked()), this,
-          SLOT(changeAdminPass()));
   connect(ui->changeNumPB, SIGNAL(clicked()), this, SLOT(changeNum()));
   connect(ui->addProdTB, SIGNAL(clicked()), this, SLOT(addProd()));
   connect(ui->delProdTB, SIGNAL(clicked()), this, SLOT(delProd()));
@@ -44,6 +42,8 @@ SettingsDialog::SettingsDialog(QWidget *parent)
   connect(ui->delTB, SIGNAL(clicked()), this, SLOT(delItem()));
   connect(ui->pageCB, SIGNAL(currentIndexChanged(int)), this,
           SLOT(updateTables()));
+  connect(ui->labelPB, SIGNAL(clicked()), this, SLOT(pickLabel()));
+  connect(ui->editProdTB, SIGNAL(clicked()), this, SLOT(editProd()));
 
   loadSettings(Settings());
 
@@ -63,7 +63,7 @@ void SettingsDialog::tryAccept() {
   sett.num = curNum;
   sett.labelPrinterName = labelPrinterName;
   sett.reportPrinterName = reportPrinterName;
-  sett.users[sett.adminName] = adminPass;
+  sett.label = label;
   sett.save();
   accept();
 }
@@ -119,12 +119,12 @@ void SettingsDialog::addItem() {
     pins.push_back(q.value(0).toInt());
   if (q.last())
     lastPin = q.value(0).toInt();
-  if (!q.exec(QString("SELECT circuit FROM circuits%1 ORDER BY circuit")
+  if (!q.exec(QString("SELECT circuit, name FROM circuits%1 ORDER BY circuit")
                   .arg(tableId)))
     Sql::showSqlError(q.lastError());
-  QList<int> circuits;
-  while (q.next())
-    circuits.push_back(q.value(0).toInt());
+  QMap<QString, QList<int>> circuits;
+  while (q.next()) 
+    circuits[q.value(1).toString()].push_back(q.value(0).toInt());
   if (q.last())
     lastCircuit = q.value(0).toInt();
 
@@ -136,6 +136,8 @@ void SettingsDialog::addItem() {
     Sql::addCircuit(q, lastPin, lastCircuit, "XX");
     if (!circuitsModel.submitAll())
       Sql::showSqlError(q.lastError());
+    pins.push_back(lastPin);
+    circuits["XX"].push_back(lastCircuit);
     static_cast<CircuitsDelegate *>(ui->circuitTV->itemDelegate())->pins = pins;
     static_cast<CircuitsDelegate *>(ui->circuitTV->itemDelegate())->circuits =
         circuits;
@@ -172,7 +174,9 @@ void SettingsDialog::delItem() {
       p.removeOne(
           circuitsModel.data(circuitsModel.index(i.row(), 0), Qt::EditRole)
               .toInt());
-      c.removeOne(
+      c[circuitsModel.data(circuitsModel.index(i.row(), 2), Qt::EditRole)
+            .toString()]
+          .removeOne(
           circuitsModel.data(circuitsModel.index(i.row(), 1), Qt::EditRole)
               .toInt());
       circuitsModel.removeRow(i.row());
@@ -220,25 +224,9 @@ void SettingsDialog::loadSettings(Settings &sett) {
   curNum = sett.num;
   labelPrinterName = sett.labelPrinterName;
   reportPrinterName = sett.reportPrinterName;
-  adminPass = sett.users[sett.adminName].toString();
   ui->labelPrinterL->setText(labelPrinterName);
   ui->reportPrinterL->setText(reportPrinterName);
-}
-
-void SettingsDialog::changeAdminPass() {
-  Settings sett;
-  bool ok;
-  QString newPass = QInputDialog::getText(
-      this, RU("Введите новый пароль"), RU("Новый пароль"),
-      QLineEdit::PasswordEchoOnEdit, "", &ok);
-  if (ok)
-    if (newPass.length() < 8) {
-      QMessageBox::warning(
-          this, RU("Неверный пароль"),
-          RU("Пароль должен состоять не менее чем из 8 символов"));
-      return;
-    } else
-      adminPass = newPass;
+  label = sett.label;
 }
 
 void SettingsDialog::changeNum() {
@@ -352,15 +340,70 @@ void SettingsDialog::updateCircuitsTable() {
   QList<int> pins;
   while (q.next())
     pins.push_back(q.value(0).toInt());
-  if (!q.exec(QString("SELECT circuit FROM circuits%1 ORDER BY circuit")
+
+  if (!q.exec(QString("SELECT circuit, name FROM circuits%1")
                   .arg(id)))
     Sql::showSqlError(q.lastError());
-  QList<int> circuits;
+  QMap<QString, QList<int>> circuits;
   while (q.next())
-    circuits.push_back(q.value(0).toInt());
+    circuits[q.value(1).toString()].push_back(q.value(0).toInt());
+
   static_cast<CircuitsDelegate *>(ui->circuitTV->itemDelegate())->pins = pins;
   static_cast<CircuitsDelegate *>(ui->circuitTV->itemDelegate())->circuits =
       circuits;
+}
+
+void SettingsDialog::pickLabel() {
+  Settings sett;
+  QStringList items;
+  int lastIndex;
+  auto i = sett.labels.constBegin();
+  while (i != sett.labels.constEnd()) {
+    items << i.key();
+    if (i.key() == sett.label)
+      lastIndex = items.count() - 1;
+    i++;
+  }
+
+  bool ok;
+  QString item =
+      QInputDialog::getItem(this, RU("Выберите этикетку"), RU("Этикетка:"),
+                            items, lastIndex, false, &ok);
+  if (ok && !item.isEmpty())
+    label = item;
+}
+
+void SettingsDialog::editProd() {
+  bool ok;
+  ProductInputDialog dialog(prodName.section(" ", 0, 0),
+                            prodName.section(" ", 1, 1), this);
+  dialog.exec();
+
+  if (!dialog.result() == QDialog::Accepted)
+    return;
+
+  QString newProd = dialog.art + " " + dialog.name;
+
+  QSqlQuery q;
+
+  if (!q.exec(QString("SELECT id, name FROM products WHERE name = \'%1\'")
+                  .arg(newProd)))
+    Sql::showSqlError(q.lastError());
+  else {
+    while (q.next()) {
+      QString s = q.value(1).toString();
+      if (q.value(1).toString() == newProd) {
+        QMessageBox::warning(this, RU("Неверное название жгута"),
+                             RU("Жгут с таким именем уже существует"));
+        return;
+      }
+    }
+  }
+  int id = ui->prodNameCB->currentData().toInt();
+  if (!q.exec(QString("UPDATE products SET name = \"%1\" WHERE id = %2")
+                  .arg(newProd).arg(id)))
+    Sql::showSqlError(q.lastError());
+  updateProducts();
 }
 
 void SettingsDialog::updateRelationsTable() {
@@ -380,6 +423,7 @@ void SettingsDialog::updateRelationsTable() {
   ui->relationTV->horizontalHeader()->setSectionResizeMode(
       QHeaderView::Stretch);
   ui->relationTV->setItemDelegate(new QSqlRelationalDelegate(ui->relationTV));
-  ui->relationTV->setItemDelegateForColumn(1, new SpinBoxDelegate(ui->relationTV));
+  ui->relationTV->setItemDelegateForColumn(1,
+                                           new SpinBoxDelegate(ui->relationTV));
   ui->relationTV->hideColumn(0);
 }
