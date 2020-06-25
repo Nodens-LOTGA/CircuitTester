@@ -1,11 +1,10 @@
 #include "mainwindow.h"
 
 #include <QApplication>
-#include <QTranslator>
 #include <QDebug>
 #include <QLibraryInfo>
-int main(int argc, char *argv[])
-{
+#include <QTranslator>
+int main(int argc, char *argv[]) {
   QApplication a(argc, argv);
 
   QTranslator qtTranslator;
@@ -15,6 +14,11 @@ int main(int argc, char *argv[])
     a.installTranslator(&qtTranslator);
   }
 
+  a.setStyleSheet(R"<>( * {
+  font-family: "Verdana";
+  font-size: 32px;
+  })<>");
+  
   MainWindow w;
   w.show();
   return a.exec();

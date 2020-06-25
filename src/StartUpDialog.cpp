@@ -8,6 +8,7 @@
 #include <QSerialPort>
 #include <QSerialPortInfo>
 #include <QSettings>
+#include <QStyledItemDelegate>
 
 StartUpDialog::StartUpDialog(QWidget *parent)
     : QDialog(parent), ui(new Ui::StartUpDialog) {
@@ -21,6 +22,9 @@ StartUpDialog::StartUpDialog(QWidget *parent)
 
   //QSettings set;
   //set.clear();
+
+  //ui->portCB->setItemDelegate(new QStyledItemDelegate());
+  //ui->userCB->setItemDelegate(new QStyledItemDelegate());
 
   Settings sett;
   ui->newUserChkB->setEnabled(sett.newUsers);

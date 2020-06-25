@@ -8,6 +8,7 @@
 #include <QPixmap>
 #include <QPrinter>
 #include <QPrinterInfo>
+#include <QDesktopWidget>
 
 ReportDialog::ReportDialog(rep::Report &report, QWidget *parent)
     : QDialog(parent), ui(new Ui::ReportDialog) {
@@ -17,30 +18,37 @@ ReportDialog::ReportDialog(rep::Report &report, QWidget *parent)
   connect(ui->printLabelPB, SIGNAL(clicked()), this, SLOT(printLabel()));
   connect(ui->printReportPB, SIGNAL(clicked()), this, SLOT(printReport()));
 
+  QDesktopWidget desk;
+  QRect screenres = desk.screenGeometry(0);
+  setGeometry(QRect(screenres.width() * 0.25, 0, screenres.width() / 2,
+                           screenres.height() - 60));
+
   this->report = report;
   ui->printLabelPB->setDisabled(report.hasError());
-  auto table = report.createTableWidget(this, QSize(778, 800));
+  auto table =
+      report.createTableWidget(this, QSize(screenres.width() / 2 - 28, screenres.height() - 60));
   table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-  //table->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  // table->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   table->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   table->setParent(ui->tableF);
   ui->gridLayout_2->addWidget(table);
   setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
-  setWindowTitle(RU("Отчёт. Результат: ") + (report.hasError() ? RU("Успех")
-                                                              : RU("Ошибка")));
+  setWindowTitle(RU("Отчёт. Результат: ") +
+                 (report.hasError() ? RU("Ошибка") : RU("Успех")));
 }
 
 ReportDialog::~ReportDialog() { delete ui; }
 
 void ReportDialog::printLabel() {
+  Settings sett;
   QByteArray buf;
-  if (!report.createZplLabel("label.prn", buf)) {
+  auto label = sett.labels[sett.label].toString();
+  if (!report.createZplLabel(label, buf)) {
     QMessageBox::warning(this, RU("Ошибка при создание этикетки"),
-                         RU("Неудалось открыть файл с этикеткой (label.zpl)"));
+                         RU("Неудалось открыть файл с этикеткой: ") + label);
     return;
   }
 
-  Settings sett;
   QString printerName = sett.labelPrinterName;
   QPrinterInfo printerInfo = QPrinterInfo::printerInfo(printerName);
   if (printerInfo.isNull()) {
@@ -72,7 +80,7 @@ void ReportDialog::printReport() {
   QRect pageSize = printer.pageLayout().paintRectPixels(printer.resolution());
   QSize size = pageSize.size();
   auto table = report.createTableWidget(nullptr, size);
-  //table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  // table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   table->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   table->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 

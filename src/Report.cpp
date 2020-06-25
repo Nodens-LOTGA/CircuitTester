@@ -53,11 +53,12 @@ QTableWidget *Report::createTableWidget(QWidget *parent, QSize size) {
   addRow(table, 4, RU("Дата"), date);
   addRow(table, 5, RU("Время"), time);
   addRow(table, 6, RU("Ф.И.О"), name);
-  addRow(table, 7, RU("Замеряемые параметры"), "");
+  addRow(table, 7, RU("Результат проверки"), "");
+  addRow(table, 8, RU("Замеряемые параметры"), "");
 
   QVector<QPair<QString, QString>> errorStrings;
   bool internalError = false;
-  int rowIndex = 8;
+  int rowIndex = 9;
   auto i = circuits.constBegin();
   while (i != circuits.constEnd()) {
     for (auto &j : i.value()) {
@@ -72,7 +73,7 @@ QTableWidget *Report::createTableWidget(QWidget *parent, QSize size) {
           if (stat != Status::Ok)
             errorStrings.push_back(
                 QPair(statusToQStr(stat), graph[j.first].name + ":" +
-                                              QString::number(graph[j.first].circuit) + RU(" ⇔ ") +
+                                              QString::number(graph[j.first].circuit) + RU(" - ") +
                           graph[j.second].name + ":" +
                           QString::number(graph[j.second].circuit)));
         }
@@ -87,9 +88,8 @@ QTableWidget *Report::createTableWidget(QWidget *parent, QSize size) {
     internalError = false;
     i++;
   }
-
-  addRow(table, rowCount - 1, RU("Результат проверки"),
-         error ? statusToQStr(Status::Error) : statusToQStr(Status::Ok));
+  table->item(7, 1)->setText(error ? statusToQStr(Status::Error)
+                                   : statusToQStr(Status::Ok));
   if (error) {
     table->setRowCount(++rowCount);
     addRow(table, rowCount - 1, RU("Неисправности"), RU("Разъём, контакт"));
@@ -142,7 +142,7 @@ bool Report::saveTo(const QString &file) {
 
 bool Report::createZplLabel(const QString &file, QByteArray &buf) {
   QFile f(file);
-  if (!f.open(QIODevice::ReadWrite | QIODevice::Text))
+  if (!f.open(QIODevice::ReadOnly | QIODevice::Text))
     return false;
   while (!f.atEnd()) {
     buf += f.readLine();

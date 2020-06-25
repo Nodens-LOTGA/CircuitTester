@@ -16,5 +16,6 @@ public:
   void updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option,
                             const QModelIndex &index) const override;
 
-  mutable QList<int> pins, circuits;
+  mutable QList<int> pins;
+  mutable QMap<QString, QList<int>> circuits;
 };

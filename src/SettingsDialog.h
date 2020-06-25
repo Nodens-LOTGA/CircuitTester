@@ -30,19 +30,20 @@ private slots:
   void resetSett();
   void delUsers();
   void loadSettings(Settings &sett);
-  void changeAdminPass();
   void changeNum();
   void addProd();
   void delProd();
   void updateProducts();
   void updateRelationsTable();
   void updateCircuitsTable();
-
+  void pickLabel();
+  void editProd();
+    
 private:
   Ui::SettingsDialog *ui;
 
   int curNum{};
   QString reportDir{}, prodName{}, labelPrinterName{}, reportPrinterName{},
-      adminPass{};
+      label{};
   QSqlRelationalTableModel circuitsModel, relationsModel;
 };
