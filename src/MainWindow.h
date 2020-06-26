@@ -1,11 +1,12 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "Report.h"
 #include "startupdialog.h"
-#include <tuple>
+#include <QLabel>
 #include <QMainWindow>
 #include <QPrinter>
-#include "Report.h"
+#include <tuple>
 #ifdef Q_OS_WIN
 #include "SerialPort.h"
 #endif
@@ -31,10 +32,13 @@ private slots:
   void settings();
   void help();
   void loadSettings();
+  void updateProd();
+  void setProdName(const QString &name);
 
 private:
   Ui::MainWindow *ui;
-  
+  QLabel *prodNameL;
+
   SerialPort port;
   int curNum{1};
   QString prodName{}, reportDir{}, workerName{}, labelPrinterName{},

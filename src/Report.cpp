@@ -1,5 +1,6 @@
 ﻿#include "Report.h"
 #include "ReportDelegate.h"
+#include "boost/array.hpp"
 #include "sqltools.h"
 #include "tools.h"
 #include <QByteArray>
@@ -13,11 +14,11 @@
 #include <QTextStream>
 #include <QTime>
 #include <boost/graph/breadth_first_search.hpp>
-#include "boost/array.hpp"
 
 using namespace rep;
 
-QTableWidget *Report::createTableWidget(QWidget *parent, QSize size) {
+QTableWidget *Report::createTableWidget(QWidget *parent, QSize size,
+                                        bool colorful) {
   int rowCount = 9 + circuits.size(), columnCount = 2;
 
   QTableWidget *table = new QTableWidget(rowCount, columnCount, parent);
@@ -34,7 +35,7 @@ QTableWidget *Report::createTableWidget(QWidget *parent, QSize size) {
   table->setEditTriggers(QAbstractItemView::NoEditTriggers);
   table->setFocusPolicy(Qt::NoFocus);
   table->setSelectionMode(QAbstractItemView::NoSelection);
-  table->setItemDelegate(new ReportDelegate(table));
+  table->setItemDelegate(new ReportDelegate(table, colorful));
 
   QTableWidgetItem *itemLogo = new QTableWidgetItem;
   QPixmap img = QPixmap(":/img/logo.png").scaledToWidth(table->width() - 4);
@@ -72,8 +73,9 @@ QTableWidget *Report::createTableWidget(QWidget *parent, QSize size) {
           auto stat = boost::get(&Edge::status, graph, *out_i);
           if (stat != Status::Ok)
             errorStrings.push_back(
-                QPair(statusToQStr(stat), graph[j.first].name + ":" +
-                                              QString::number(graph[j.first].circuit) + RU(" - ") +
+                QPair(statusToQStr(stat),
+                      graph[j.first].name + ":" +
+                          QString::number(graph[j.first].circuit) + RU(" - ") +
                           graph[j.second].name + ":" +
                           QString::number(graph[j.second].circuit)));
         }
@@ -206,7 +208,8 @@ bool Report::fill() {
     pins[pin] = v;
   }
   if (!q.exec(
-          QString("SELECT num, pinFrom, pinTo FROM relations%1 ORDER BY num").arg(tableId)))
+          QString("SELECT num, pinFrom, pinTo FROM relations%1 ORDER BY num")
+              .arg(tableId)))
     Sql::showSqlError(q.lastError());
   while (q.next()) {
     char pinFrom = static_cast<char>(q.value(1).toInt());

@@ -16,7 +16,7 @@
   <property name="styleSheet">
    <string notr="true">QPushButton {
 	min-height: 64px;
-	min-width: 100px;
+	min-width: 200px;
 	padding: 16px;
 }</string>
   </property>

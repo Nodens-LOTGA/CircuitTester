@@ -2,13 +2,13 @@
 #include "./ui_reportdialog.h"
 #include "Settings.h"
 #include "winapiprint.h"
+#include <QDesktopWidget>
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QPainter>
 #include <QPixmap>
 #include <QPrinter>
 #include <QPrinterInfo>
-#include <QDesktopWidget>
 
 ReportDialog::ReportDialog(rep::Report &report, QWidget *parent)
     : QDialog(parent), ui(new Ui::ReportDialog) {
@@ -21,12 +21,12 @@ ReportDialog::ReportDialog(rep::Report &report, QWidget *parent)
   QDesktopWidget desk;
   QRect screenres = desk.screenGeometry(0);
   setGeometry(QRect(screenres.width() * 0.25, 0, screenres.width() / 2,
-                           screenres.height() - 60));
+                    screenres.height() - 60));
 
   this->report = report;
   ui->printLabelPB->setDisabled(report.hasError());
-  auto table =
-      report.createTableWidget(this, QSize(screenres.width() / 2 - 28, screenres.height() - 60));
+  auto table = report.createTableWidget(
+      this, QSize(screenres.width() / 2 - 28, screenres.height() - 60));
   table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   // table->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   table->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -34,7 +34,8 @@ ReportDialog::ReportDialog(rep::Report &report, QWidget *parent)
   ui->gridLayout_2->addWidget(table);
   setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
   setWindowTitle(RU("Îò÷¸ò. Ðåçóëüòàò: ") +
-                 (report.hasError() ? RU("Îøèáêà") : RU("Óñïåõ")));
+                 (report.hasError() ? rep::statusToQStr(rep::Status::Error)
+                                    : rep::statusToQStr(rep::Status::Ok)));
 }
 
 ReportDialog::~ReportDialog() { delete ui; }
@@ -77,30 +78,50 @@ void ReportDialog::printReport() {
 
   QPrinter printer(printerInfo);
   printer.setPageSize(QPageSize(QPageSize::A4));
-  QRect pageSize = printer.pageLayout().paintRectPixels(printer.resolution());
-  QSize size = pageSize.size();
-  auto table = report.createTableWidget(nullptr, size);
+  QRect pageRect = printer.pageLayout().paintRectPixels(printer.resolution());
+  QSize size = pageRect.size();
+  auto table = report.createTableWidget(nullptr, size, false);
   // table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   table->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   table->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
   QFont font(table->font());
-  font.setPointSize(20);
+  font.setPointSize(14);
   table->setFont(font);
-  auto s = table->verticalHeader()->length();
-  for (int i = 20; s > pageSize.height(); i--) {
-    font.setPointSize(i);
-    table->setFont(font);
-    s = table->verticalHeader()->length();
-  }
 
-  QImage image1(pageSize.size(), QImage::Format_ARGB32);
+  int height = table->verticalHeader()->length();
+  int page = 1;
+  int pageHeight = pageRect.height();
+  int j{};
+  QRect drawRect{pageRect};
+  table->setRowCount(table->rowCount() + 1);
+  QTableWidgetItem *item = new QTableWidgetItem();
+  item->setSizeHint(QSize(0, height + 2 * pageHeight));
+  table->setItem(table->rowCount() - 1, 0, item);
+  do {
+    table->scrollTo(table->model()->index(j, 0),
+                    QAbstractItemView::PositionAtTop);
+    int drawHeight{2};
+    for (int i = j; i < table->rowCount(); i++) {
+      int rowHeight = table->verticalHeader()->sectionSize(i);
+      drawHeight += rowHeight;
+      if (drawHeight > pageHeight) {
+        drawHeight -= rowHeight;
+        j = i;
+        break;
+      }
+    }
+    QImage image(pageRect.size(), QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
 
-  image1.fill(Qt::transparent);
+    QPainter painter(&image);
+    // painter.setRenderHint(QPainter::Antialiasing);
+    drawRect.setHeight(drawHeight);
+    table->render(&painter, QPoint(), drawRect);
+    image.save(QString("page%1.png").arg(page));
 
-  QPainter painter(&image1);
-  // painter.setRenderHint(QPainter::Antialiasing);
-  table->render(&painter);
-  image1.save("test_img.png");
+    height -= pageHeight;
+    page++;
+  } while (height > 0);
+
   delete table;
 }

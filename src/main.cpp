@@ -4,6 +4,8 @@
 #include <QDebug>
 #include <QLibraryInfo>
 #include <QTranslator>
+
+#include <QStyleFactory>
 int main(int argc, char *argv[]) {
   QApplication a(argc, argv);
 
@@ -14,6 +16,7 @@ int main(int argc, char *argv[]) {
     a.installTranslator(&qtTranslator);
   }
 
+  a.setStyle(QStyleFactory::create("Fusion"));
   a.setStyleSheet(R"<>( * {
   font-family: "Verdana";
   font-size: 32px;

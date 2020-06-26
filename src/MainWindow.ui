@@ -34,23 +34,22 @@ QCheckBox::indicator {
 	width:48px;
 	height:48px;
 }
-QCheckBox::indicator:unchecked {
-    image: url(:/icon/checkbox_off.png);
-}
-QCheckBox::indicator:checked {
-    image: url(:/icon/checkbox_on.png);
-}
 QPushButton {
 	min-height: 100px;
-	min-width: 100px;
+	min-width: 200px;
 	padding: 16px;
 }
 QComboBox {
 	height:48px;
 }
-QToolButton {
+QToolButton{
 	width:48px; 
 	height: 48px;
+}
+QToolButton#prodNameTB { 
+	height: 48px;
+	background-color: transparent; 
+	border: none; 
 }
 * {
 	font-family: &quot;Verdana&quot;;
@@ -280,7 +279,7 @@ QComboBox ::item {
       <item row="1" column="1">
        <layout class="QHBoxLayout" name="horizontalLayout_7">
         <property name="spacing">
-         <number>0</number>
+         <number>7</number>
         </property>
         <item>
          <widget class="QPushButton" name="helpB">
@@ -495,7 +494,7 @@ QComboBox ::item {
       <item>
        <widget class="QFrame" name="frame_2">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
@@ -544,16 +543,28 @@ QComboBox ::item {
            </property>
           </widget>
          </item>
-         <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-          <widget class="QLabel" name="prodNameL">
+         <item>
+          <widget class="QToolButton" name="prodNameTB">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
            <property name="text">
-            <string> - </string>
+            <string/>
+           </property>
+           <property name="popupMode">
+            <enum>QToolButton::InstantPopup</enum>
+           </property>
+           <property name="toolButtonStyle">
+            <enum>Qt::ToolButtonTextOnly</enum>
            </property>
           </widget>
          </item>

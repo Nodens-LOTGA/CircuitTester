@@ -25,6 +25,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
   ui->setupUi(this);
 
   connect(ui->okPB, SIGNAL(clicked()), this, SLOT(tryAccept()));
+  connect(ui->cancelPB, SIGNAL(clicked()), this, SLOT(tryReject()));
   connect(ui->cancelPB, SIGNAL(clicked()), this, SLOT(reject()));
   connect(ui->setLabelPrinterPB, SIGNAL(clicked()), this,
           SLOT(setLabelPrinter()));
@@ -66,6 +67,12 @@ void SettingsDialog::tryAccept() {
   sett.label = label;
   sett.save();
   accept();
+}
+
+void SettingsDialog::tryReject() {
+  QSettings sett;
+  prodName = ui->prodNameCB->currentText();
+  sett.setValue("main/prodName", prodName);
 }
 
 void SettingsDialog::setLabelPrinter() {
@@ -123,7 +130,7 @@ void SettingsDialog::addItem() {
                   .arg(tableId)))
     Sql::showSqlError(q.lastError());
   QMap<QString, QList<int>> circuits;
-  while (q.next()) 
+  while (q.next())
     circuits[q.value(1).toString()].push_back(q.value(0).toInt());
   if (q.last())
     lastCircuit = q.value(0).toInt();
@@ -177,8 +184,8 @@ void SettingsDialog::delItem() {
       c[circuitsModel.data(circuitsModel.index(i.row(), 2), Qt::EditRole)
             .toString()]
           .removeOne(
-          circuitsModel.data(circuitsModel.index(i.row(), 1), Qt::EditRole)
-              .toInt());
+              circuitsModel.data(circuitsModel.index(i.row(), 1), Qt::EditRole)
+                  .toInt());
       circuitsModel.removeRow(i.row());
     }
     if (!circuitsModel.submitAll())
@@ -203,7 +210,7 @@ void SettingsDialog::updateTables() {
   else
     updateRelationsTable();
 
-  prodName = ui->prodNameCB->currentText();
+  // prodName = ui->prodNameCB->currentText();
 }
 
 void SettingsDialog::resetSett() {
@@ -278,6 +285,7 @@ void SettingsDialog::addProd() {
       Sql::showSqlError(q.lastError());
     if (!q.exec(Sql::relationsSql(id)))
       Sql::showSqlError(q.lastError());
+    prodName = newProd;
   }
   updateProducts();
 }
@@ -299,6 +307,7 @@ void SettingsDialog::delProd() {
   if (!q.exec("DELETE FROM products WHERE id =" + QString::number(id)))
     Sql::showSqlError(q.lastError());
   ui->prodNameCB->removeItem(ui->prodNameCB->currentIndex());
+  prodName = ui->prodNameCB->currentText();
   updateProducts();
 }
 
@@ -307,7 +316,6 @@ void SettingsDialog::updateProducts() {
   if (!q.exec("SELECT id, name FROM products"))
     Sql::showSqlError(q.lastError());
   ui->prodNameCB->clear();
-  Settings sett;
   int id{};
   QString name{};
   int lastProdIndex{};
@@ -315,7 +323,7 @@ void SettingsDialog::updateProducts() {
     id = q.value(0).toInt();
     name = q.value(1).toString();
     ui->prodNameCB->addItem(name, id);
-    if (name == sett.prodName)
+    if (name == prodName)
       lastProdIndex = ui->prodNameCB->count() - 1;
   }
   ui->prodNameCB->setCurrentIndex(lastProdIndex);
@@ -341,8 +349,7 @@ void SettingsDialog::updateCircuitsTable() {
   while (q.next())
     pins.push_back(q.value(0).toInt());
 
-  if (!q.exec(QString("SELECT circuit, name FROM circuits%1")
-                  .arg(id)))
+  if (!q.exec(QString("SELECT circuit, name FROM circuits%1").arg(id)))
     Sql::showSqlError(q.lastError());
   QMap<QString, QList<int>> circuits;
   while (q.next())
@@ -401,8 +408,10 @@ void SettingsDialog::editProd() {
   }
   int id = ui->prodNameCB->currentData().toInt();
   if (!q.exec(QString("UPDATE products SET name = \"%1\" WHERE id = %2")
-                  .arg(newProd).arg(id)))
+                  .arg(newProd)
+                  .arg(id)))
     Sql::showSqlError(q.lastError());
+  prodName = newProd;
   updateProducts();
 }
 

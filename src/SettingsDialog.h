@@ -21,6 +21,7 @@ public:
 
 private slots:
   void tryAccept();
+  void tryReject();
   void setLabelPrinter();
   void setReportPrinter();
   void setReportDir();

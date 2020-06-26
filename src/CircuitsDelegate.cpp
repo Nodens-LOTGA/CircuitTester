@@ -5,8 +5,8 @@
 #include <QLineEdit>
 #include <QPainter>
 #include <QSpinBox>
-#include <QToolTip>
 #include <QTimer>
+#include <QToolTip>
 
 QWidget *CircuitsDelegate::createEditor(QWidget *parent,
                                         const QStyleOptionViewItem &option,
@@ -58,9 +58,8 @@ void CircuitsDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
       return;
     else if (pins.contains(value)) {
       QTimer::singleShot(100, []() {
-        QToolTip::showText(QCursor::pos(),
-                           RU("Такое значение уже существует"), nullptr,
-                           QRect(), 5000);
+        QToolTip::showText(QCursor::pos(), RU("Такое значение уже существует"),
+                           nullptr, QRect(), 5000);
       });
       return;
     }
