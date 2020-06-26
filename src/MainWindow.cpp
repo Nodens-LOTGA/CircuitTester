@@ -13,8 +13,12 @@
 #include <QByteArray>
 #include <QDate>
 #include <QDesktopWidget>
+#include <QFontMetrics>
 #include <QHeaderView>
 #include <QImage>
+#include <QLabel>
+#include <QLineEdit>
+#include <QMenu>
 #include <QMessageBox>
 #include <QPaintEngine>
 #include <QPainter>
@@ -22,10 +26,8 @@
 #include <QTableView>
 #include <QTableWidget>
 #include <QTableWidgetItem>
+#include <QToolButton>
 #include <QtSql>
-
-//Выбор жгута пользователем
-//
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -39,6 +41,19 @@ MainWindow::MainWindow(QWidget *parent)
   QCoreApplication::setOrganizationName("Ladaplast");
   QCoreApplication::setOrganizationDomain("temp.com");
   QCoreApplication::setApplicationName("Tester");
+
+  prodNameL = new QLabel(ui->prodNameTB);
+  prodNameL->setAlignment(Qt::AlignCenter);
+  prodNameL->setMouseTracking(false);
+  prodNameL->setTextInteractionFlags(Qt::NoTextInteraction);
+  prodNameL->setWordWrap(true);
+  ui->prodNameTB->setLayout(new QHBoxLayout(ui->prodNameTB));
+  ui->prodNameTB->layout()->setContentsMargins(11, 11, 11, 11);
+  ui->prodNameTB->layout()->addWidget(prodNameL);
+  ui->prodNameTB->layout()->setSizeConstraint(QLayout::SetMinimumSize);
+
+  QMenu *menu = new QMenu(ui->prodNameTB);
+  ui->prodNameTB->setMenu(menu);
 
   init();
 }
@@ -55,9 +70,8 @@ void MainWindow::init() {
     QTimer::singleShot(0, qApp, SLOT(quit()));
     return;
   }
+  initSql();
   loadSettings();
-
-  this->showFullScreen();
 
   /*if (!port.open(ui->portL->text().toStdString())) {
     QMessageBox::warning(this, RU("Ошибка порта"),
@@ -65,7 +79,7 @@ void MainWindow::init() {
     exit();
   }*/
 
-  initSql();
+  this->showFullScreen();
 }
 
 void MainWindow::initSql() {
@@ -115,24 +129,30 @@ void MainWindow::start() {
   }
 
   ReportDialog dialog(report, this);
- 
+
   dialog.exec();
 }
 
 void MainWindow::exit() {
-  Settings sett;
-  sett.num = curNum;
-  sett.save();
-  this->hide();
-  port.close();
-  Sql::closeDb();
-  QApplication::quit(); // TODO:
-  // init();
+  if (QMessageBox::question(this, RU("Завершение работы"),
+                            RU("Вы действительно хотите выйти?")) ==
+      QMessageBox::Yes) {
+    Settings sett;
+    sett.num = curNum;
+    sett.prodName = prodName;
+    sett.save();
+    this->hide();
+    port.close();
+    Sql::closeDb();
+    QApplication::quit(); // TODO:
+    // init();
+  }
 }
 
 void MainWindow::settings() {
   SettingsDialog settingsDialog(this);
   connect(&settingsDialog, SIGNAL(accepted()), this, SLOT(loadSettings()));
+  connect(&settingsDialog, SIGNAL(rejected()), this, SLOT(updateProd()));
 
   settingsDialog.setWindowState(Qt::WindowFullScreen);
   QDesktopWidget desk;
@@ -158,8 +178,29 @@ void MainWindow::loadSettings() {
   curNum = sett.num;
   ui->chkNumL->setText(QString::number(curNum).rightJustified(6, '0'));
   reportDir = sett.reportDir;
-  prodName = sett.prodName;
-  ui->prodNameL->setText(prodName);
   reportPrinterName = sett.reportPrinterName;
   labelPrinterName = sett.labelPrinterName;
+  updateProd();
+}
+
+void MainWindow::updateProd() {
+  Settings sett;
+  QSqlQuery q;
+  if (!q.exec("SELECT id, name FROM products"))
+    Sql::showSqlError(q.lastError());
+  QString name{};
+  auto menu = ui->prodNameTB->menu();
+  menu->clear();
+  while (q.next()) {
+    name = q.value(1).toString();
+    auto action = new QAction(name, menu);
+    connect(action, &QAction::triggered, [=](bool chk) { setProdName(name); });
+    menu->addAction(action);
+  }
+  setProdName(sett.prodName);
+}
+
+void MainWindow::setProdName(const QString &name) {
+  prodNameL->setText(name);
+  prodName = name;
 }

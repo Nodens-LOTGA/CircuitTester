@@ -1,5 +1,6 @@
 #pragma once
 #include "SerialPort.h"
+#include "tools.h"
 #include <QDate>
 #include <QMap>
 #include <QTableWidget>
@@ -9,18 +10,18 @@
 
 namespace rep {
 
-enum class Status { Ok, Error, Short = Error | 2, Open = Error | 4};
+enum class Status { Ok, Error, Short = Error | 2, Open = Error | 4 };
 
 static QString statusToQStr(const Status stat) {
   switch (stat) {
   case Status::Ok:
-    return QString("OK");
+    return RU("Годен");
   case Status::Open:
-    return QString("Open");
+    return RU("Обрыв");
   case Status::Short:
-    return QString("Short");
+    return RU("Замыкание");
   case Status::Error:
-    return QString("Error");
+    return RU("Негоден");
   }
 };
 
@@ -49,7 +50,8 @@ public:
     time = QTime::currentTime().toString("HH:mm:ss");
   };
 
-  QTableWidget *createTableWidget(QWidget *parent, QSize size);
+  QTableWidget *createTableWidget(QWidget *parent, QSize size,
+                                  bool colorful = true);
   QTableWidget *createLabelTableWidget(QWidget *parent, QSize size);
   bool saveTo(const QString &file);
   bool createZplLabel(const QString &file, QByteArray &buf);
