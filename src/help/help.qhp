@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QtHelpProject version="1.0">
+    <namespace>ladaplast.qt.circuittester</namespace>
+    <virtualFolder>doc</virtualFolder>
+    <customFilter name="Circuit Tester 1.0">
+        <filterAttribute>CircuitTester</filterAttribute>
+        <filterAttribute>1.0</filterAttribute>
+    </customFilter>
+    <filterSection>
+        <filterAttribute>CircuitTester</filterAttribute>
+        <filterAttribute>1.0</filterAttribute>
+        <toc>
+            <section title="Документация" ref="index.html">
+                <section title="За словесными горами" ref="doc.html#chapter1"/>
+                <section title="Страдания юного Вертера" ref="doc.html#chapter2"/>
+                <section title="Кафка" ref="doc.html#chapter3"/>
+            </section>
+        </toc>
+        <!--<keywords>
+            <keyword name="Буквоград" ref="doc.html#foo"/>
+            <keyword name="Замза" ref="doc.html#bar"/>
+        </keywords>-->
+        <files>
+            <file>*.html</file>
+        </files>
+    </filterSection>
+</QtHelpProject>

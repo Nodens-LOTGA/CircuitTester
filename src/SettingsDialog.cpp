@@ -248,7 +248,7 @@ void SettingsDialog::changeNum() {
 void SettingsDialog::addProd() {
   bool ok;
   ProductInputDialog dialog(prodName.section(" ", 0, 0),
-                            prodName.section(" ", 1, 1), this);
+                            prodName.section(" ", 1), this);
   dialog.exec();
 
   if (!dialog.result() == QDialog::Accepted)
@@ -340,6 +340,8 @@ void SettingsDialog::updateCircuitsTable() {
   circuitsModel.select();
   ui->circuitTV->setModel(&circuitsModel);
   ui->circuitTV->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  ui->circuitTV->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+  ui->circuitTV->verticalHeader()->setDefaultSectionSize(48);
   ui->circuitTV->setItemDelegate(new CircuitsDelegate(ui->circuitTV));
 
   QSqlQuery q;
@@ -383,7 +385,7 @@ void SettingsDialog::pickLabel() {
 void SettingsDialog::editProd() {
   bool ok;
   ProductInputDialog dialog(prodName.section(" ", 0, 0),
-                            prodName.section(" ", 1, 1), this);
+                            prodName.section(" ", 1), this);
   dialog.exec();
 
   if (!dialog.result() == QDialog::Accepted)
@@ -431,6 +433,9 @@ void SettingsDialog::updateRelationsTable() {
   ui->relationTV->setModel(&relationsModel);
   ui->relationTV->horizontalHeader()->setSectionResizeMode(
       QHeaderView::Stretch);
+  ui->relationTV->verticalHeader()->setSectionResizeMode(
+      QHeaderView::Fixed);
+  ui->relationTV->verticalHeader()->setDefaultSectionSize(48);
   ui->relationTV->setItemDelegate(new QSqlRelationalDelegate(ui->relationTV));
   ui->relationTV->setItemDelegateForColumn(1,
                                            new SpinBoxDelegate(ui->relationTV));

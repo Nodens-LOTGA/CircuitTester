@@ -25,8 +25,8 @@ QTableWidget *Report::createTableWidget(QWidget *parent, QSize size,
   table->setGeometry(0, 0, size.width(), size.height());
   table->verticalHeader()->setVisible(false);
   table->horizontalHeader()->setVisible(false);
-  table->horizontalHeader()->resizeSection(0, size.width() / 2);
-  table->horizontalHeader()->resizeSection(1, size.width() / 2 - 3);
+  table->horizontalHeader()->resizeSection(0, std::ceill(size.width() / 2.0));
+  table->horizontalHeader()->resizeSection(1, std::floor(size.width() / 2.0) - 1);
   table->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
   table->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   table->setSpan(0, 0, 1, 2);
@@ -36,6 +36,7 @@ QTableWidget *Report::createTableWidget(QWidget *parent, QSize size,
   table->setFocusPolicy(Qt::NoFocus);
   table->setSelectionMode(QAbstractItemView::NoSelection);
   table->setItemDelegate(new ReportDelegate(table, colorful));
+  table->setFrameShape(QFrame::NoFrame);
 
   QTableWidgetItem *itemLogo = new QTableWidgetItem;
   QPixmap img = QPixmap(":/img/logo.png").scaledToWidth(table->width() - 4);

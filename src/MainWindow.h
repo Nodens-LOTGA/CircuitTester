@@ -28,7 +28,7 @@ private slots:
   void init();
   void initSql();
   void start();
-  void exit();
+  void exit(bool save = true);
   void settings();
   void help();
   void loadSettings();
