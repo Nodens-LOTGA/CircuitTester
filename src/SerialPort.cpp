@@ -10,7 +10,7 @@ bool SerialPort::open(std::string portName, BaudRate baud, DataBits dataBits) {
   hComm = CreateFile(portName.c_str(), GENERIC_READ | GENERIC_WRITE, 0, 0,
                      OPEN_EXISTING,
                      FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, 0);
-  if (hComm == NULL) {
+  if (hComm == INVALID_HANDLE_VALUE || hComm == NULL) {
     qDebug() << "Failed to open serial port.";
     return false;
   }
@@ -41,7 +41,7 @@ bool SerialPort::open(std::string portName, BaudRate baud, DataBits dataBits) {
     if (overlappedWrite.hEvent != NULL)
       CloseHandle(overlappedWrite.hEvent);
     CloseHandle(hComm);
-    qDebug("Failed to setup serial port. Error: ", dwError);
+    qDebug("Failed to setup serial port. Error: %i", dwError);
     return false;
   } else
     qDebug() << "Port was opened.";
@@ -52,10 +52,10 @@ bool SerialPort::open(std::string portName, BaudRate baud, DataBits dataBits) {
 }
 
 bool SerialPort::close() {
-  qDebug() << "Port was closed.";
-
-  if (!opened || hComm == NULL)
+  if (!opened || hComm == NULL || hComm == INVALID_HANDLE_VALUE)
     return true;
+
+  qDebug() << "Port was closed.";
 
   if (overlappedRead.hEvent != NULL)
     CloseHandle(overlappedRead.hEvent);
@@ -69,7 +69,7 @@ bool SerialPort::close() {
 }
 
 int SerialPort::write(const char *buffer, int size) {
-  if (!opened || hComm == NULL)
+  if (!opened || hComm == NULL || hComm == INVALID_HANDLE_VALUE)
     return 0;
 
   BOOL bWriteStat;
@@ -90,7 +90,7 @@ int SerialPort::write(const char *buffer, int size) {
 }
 
 int SerialPort::read(void *buffer, int limit) {
-  if (!opened || hComm == NULL)
+  if (!opened || hComm == NULL || hComm == INVALID_HANDLE_VALUE)
     return 0;
 
   BOOL bReadStatus;

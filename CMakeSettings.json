@@ -47,6 +47,18 @@
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x86" ],
       "variables": []
+    },
+    {
+      "name": "x86-ReleaseD",
+      "generator": "Ninja",
+      "configurationType": "RelWithDebInfo",
+      "buildRoot": "${projectDir}\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x86" ],
+      "variables": []
     }
   ]
 }

@@ -20,11 +20,11 @@ StartUpDialog::StartUpDialog(QWidget *parent)
   ui->nameLE->setValidator(
       new QRegExpValidator(QRegExp(tr("[\\w\\s]+")), this));
 
-  //QSettings set;
-  //set.clear();
+  // QSettings set;
+  // set.clear();
 
-  //ui->portCB->setItemDelegate(new QStyledItemDelegate());
-  //ui->userCB->setItemDelegate(new QStyledItemDelegate());
+  // ui->portCB->setItemDelegate(new QStyledItemDelegate());
+  // ui->userCB->setItemDelegate(new QStyledItemDelegate());
 
   Settings sett;
   ui->newUserChkB->setEnabled(sett.newUsers);
@@ -102,13 +102,13 @@ void StartUpDialog::tryAccept() {
     else
       sett.isAdmin = false;
   }
-  //TODO:
-  /*if (ui->portCB->currentText() == "") {
+  // TODO:
+  if (ui->portCB->currentText() == "") {
     QMessageBox::warning(this, RU("Неверный порт"),
                          RU("Пожалуйста, выберетие порт"));
     return;
   } else
-    sett.portName = ui->portCB->currentText();*/
+    sett.portName = ui->portCB->currentText();
   sett.save();
   accept();
 }
