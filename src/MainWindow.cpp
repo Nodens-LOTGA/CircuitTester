@@ -166,7 +166,7 @@ void MainWindow::settings() {
 
 void MainWindow::help() {
   HelpDialog helpDialog(QApplication::applicationDirPath() + "/help.qhc", this);
-  helpDialog.setWindowState(Qt::WindowFullScreen);
+  helpDialog.setWindowState(Qt::WindowFullScreen); 
   helpDialog.setGeometry(QGuiApplication::screens().first()->geometry());
   helpDialog.exec();
 }

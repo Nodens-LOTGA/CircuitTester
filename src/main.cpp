@@ -1,11 +1,10 @@
 #include "mainwindow.h"
-
 #include <QApplication>
 #include <QDebug>
 #include <QLibraryInfo>
 #include <QTranslator>
-
 #include <QStyleFactory>
+
 int main(int argc, char *argv[]) {
   QApplication a(argc, argv);
 
@@ -19,9 +18,9 @@ int main(int argc, char *argv[]) {
   a.setStyle(QStyleFactory::create("Fusion"));
   a.setStyleSheet(R"<>( * {
   font-family: "Verdana";
-  font-size: 32px;
+  font-size: 28px;
   })<>");
-  
+
   MainWindow w;
 
   w.show();
