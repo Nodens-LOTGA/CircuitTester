@@ -11,6 +11,7 @@
 #include <QPrinterInfo>
 #include <QScreen>
 #include <QThread>
+#include <QTimer>
 
 ReportDialog::ReportDialog(rep::Report &report, QWidget *parent)
     : QDialog(parent), ui(new Ui::ReportDialog) {
@@ -22,8 +23,8 @@ ReportDialog::ReportDialog(rep::Report &report, QWidget *parent)
 
   QDesktopWidget desk;
   QRect screenres = QGuiApplication::screens().first()->availableGeometry();
-  setGeometry(QRect(screenres.width() * 1.0 / 6.0, 0, screenres.width() * 2.0 / 3.0,
-                    screenres.height() - 40));
+  setGeometry(QRect(screenres.width() * 1.0 / 6.0, 0,
+                    screenres.width() * 2.0 / 3.0, screenres.height() - 40));
 
   this->report = report;
   ui->printLabelPB->setDisabled(report.hasError());
@@ -45,6 +46,9 @@ ReportDialog::ReportDialog(rep::Report &report, QWidget *parent)
 ReportDialog::~ReportDialog() { delete ui; }
 
 void ReportDialog::printLabel() {
+  ui->printLabelPB->setDisabled(true);
+  QTimer::singleShot(3000, ui->printLabelPB,
+                     [this]() { ui->printLabelPB->setEnabled(true); });
   Settings sett;
   QByteArray buf;
   auto label = sett.labels[sett.label].toString();
@@ -80,13 +84,19 @@ void ReportDialog::printReport() {
     return;
   }
 
-  QPrinter printer(printerInfo);
-  printer.setPageSize(QPageSize(QPageSize::A4));
-  QRect pageRect = printer.pageLayout().paintRectPixels(printer.resolution());
-  QSize size = pageRect.size();
-  auto table = report.createTableWidget(nullptr, size, false);
+  ui->printReportPB->setDisabled(true);
+  QTimer::singleShot(3000, ui->printReportPB,
+                     [this]() { ui->printReportPB->setEnabled(true); });
 
-  // table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  QPrinter printer(printerInfo);
+  printer.setResolution(300);
+  printer.setPageSize(QPageSize(QPageSize::A4));
+  printer.setPageMargins(QMarginsF(2.0, 2.0, 4.0, 2.0),
+                         QPageLayout::Millimeter);
+  printer.setFullPage(false);
+  QRect pageRect = printer.pageRect();
+  QSize tableSize = QPageSize::sizePixels(QPageSize::A4, 100);
+  auto table = report.createTableWidget(nullptr, tableSize, false);
   table->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   table->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   QFont font(table->font());
@@ -95,17 +105,31 @@ void ReportDialog::printReport() {
   table->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
   table->setAttribute(Qt::WA_DontShowOnScreen);
 
-  int height = table->verticalHeader()->length();
+  double xscale = pageRect.width() / double(tableSize.width() + 40);
+  double yscale = pageRect.height() / double(tableSize.height() + 40);
+  double scale = qMin(xscale, yscale);
+
+  int height = table->verticalHeader()->length() * scale;
   int page = 1;
-  int pageHeight = pageRect.height();
+  int pageHeight = tableSize.height() * scale;
   int j{};
-  QRect drawRect{pageRect};
-  table->setRowCount(table->rowCount() + 1);
-  QTableWidgetItem *item = new QTableWidgetItem();
-  item->setSizeHint(QSize(0, height + 2 * pageHeight));
-  table->setItem(table->rowCount() - 1, 0, item);
+
+  if (height > pageHeight) {
+    table->setRowCount(table->rowCount() + 1);
+    QTableWidgetItem *item = new QTableWidgetItem();
+    item->setSizeHint(
+        QSize(0, table->verticalHeader()->length() + 2 * tableSize.height()));
+    table->setItem(table->rowCount() - 1, 0, item);
+  }
 
   QPainter printPainter(&printer);
+  printPainter.translate(printer.paperRect().center());
+  printPainter.scale(scale, scale);
+  printPainter.translate(-tableSize.width() / 2, -tableSize.height() / 2);
+  printPainter.setRenderHints(QPainter::Antialiasing |
+                              QPainter::TextAntialiasing |
+                              QPainter::SmoothPixmapTransform);
+  QRect drawRect(table->rect());
   do {
     table->scrollTo(table->model()->index(j, 0),
                     QAbstractItemView::PositionAtTop);
@@ -113,7 +137,7 @@ void ReportDialog::printReport() {
     for (int i = j; i < table->rowCount(); i++) {
       int rowHeight = table->verticalHeader()->sectionSize(i);
       drawHeight += rowHeight;
-      if (drawHeight > pageHeight) {
+      if (drawHeight * scale > pageHeight) {
         drawHeight -= rowHeight;
         j = i;
         break;
@@ -129,6 +153,7 @@ void ReportDialog::printReport() {
     table->render(&painter, QPoint(), drawRect);
     image.save(QString("page%1.png").arg(page));*/
 
+    drawRect.setHeight(drawHeight);
     table->render(&printPainter, QPoint(), drawRect);
 
     height -= pageHeight;
