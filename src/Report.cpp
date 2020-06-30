@@ -26,7 +26,8 @@ QTableWidget *Report::createTableWidget(QWidget *parent, QSize size,
   table->verticalHeader()->setVisible(false);
   table->horizontalHeader()->setVisible(false);
   table->horizontalHeader()->resizeSection(0, std::ceill(size.width() / 2.0));
-  table->horizontalHeader()->resizeSection(1, std::floor(size.width() / 2.0) - 1);
+  table->horizontalHeader()->resizeSection(1,
+                                           std::floor(size.width() / 2.0) - 1);
   table->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
   table->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   table->setSpan(0, 0, 1, 2);
@@ -241,7 +242,7 @@ bool rep::Report::checkAll(SerialPort &port) {
         port.write(wb.data(), wb.size());
         port.read(rb.data(), 255);
         attempt++;
-        QThread::msleep(50);
+        QThread::msleep(1 + 50 * attempt);
       } while (!rb.startsWith(wb.left(4)));
       for (int j = 4; j < rb.size(); j++) {
         vertex_t v = pins[rb.at(j)];
@@ -264,7 +265,9 @@ bool rep::Report::checkAll(SerialPort &port) {
           }
         }
         if (exist || found) {
-          boost::add_edge(k.first, v, Edge{Status::Ok}, graph);
+          auto [e1, notexist] = boost::add_edge(k.first, v, Edge{Status::Ok}, graph);
+          if (!notexist)
+            graph[e1].status = Status::Ok;
         }
       }
     }

@@ -182,7 +182,7 @@
        <property name="text">
         <string>Отмена</string>
        </property>
-       <property name="default">
+       <property name="autoDefault">
         <bool>false</bool>
        </property>
       </widget>
@@ -204,6 +204,9 @@
       <widget class="QPushButton" name="okPB">
        <property name="text">
         <string>Принять</string>
+       </property>
+       <property name="autoDefault">
+        <bool>false</bool>
        </property>
       </widget>
      </item>
@@ -285,6 +288,9 @@
         <string>Выбрать шаблон
 этикетки</string>
        </property>
+       <property name="autoDefault">
+        <bool>false</bool>
+       </property>
       </widget>
      </item>
      <item>
@@ -292,6 +298,9 @@
        <property name="text">
         <string>Выбрать принтер
 для этикеток</string>
+       </property>
+       <property name="autoDefault">
+        <bool>false</bool>
        </property>
       </widget>
      </item>
@@ -301,6 +310,9 @@
         <string>Выбрать принтер
 для отчётов</string>
        </property>
+       <property name="autoDefault">
+        <bool>false</bool>
+       </property>
       </widget>
      </item>
      <item>
@@ -308,6 +320,9 @@
        <property name="text">
         <string>Изменить номер
 проверки</string>
+       </property>
+       <property name="autoDefault">
+        <bool>false</bool>
        </property>
       </widget>
      </item>
@@ -317,6 +332,9 @@
         <string>Настройки
 пользователей</string>
        </property>
+       <property name="autoDefault">
+        <bool>false</bool>
+       </property>
       </widget>
      </item>
      <item>
@@ -324,6 +342,9 @@
        <property name="text">
         <string>Сбросить все
  настройки</string>
+       </property>
+       <property name="autoDefault">
+        <bool>false</bool>
        </property>
       </widget>
      </item>

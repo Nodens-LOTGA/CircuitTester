@@ -65,7 +65,10 @@ add_executable (${PROJECT_NAME}
  "HelpBrowser.h" "HelpBrowser.cpp")
 
 
-#set_property(TARGET ${PROJECT_NAME} PROPERTY WIN32_EXECUTABLE true)
+if(WIN32)
+    set_property(TARGET ${PROJECT_NAME} PROPERTY WIN32_EXECUTABLE true)
+endif()
+target_compile_definitions(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Release>:QT_NO_DEBUG_OUTPUT>")
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
 
@@ -90,6 +93,6 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         env PATH="${_qt_bin_dir}" "${WINDEPLOYQT_EXECUTABLE}"
             "$<TARGET_FILE:${PROJECT_NAME}>"
     COMMENT "Running windeployqt..."
-    #COMMAND "${CMAKE_COMMAND}" -E env PATH="${_qt_bin_dir}" "${QHELPGENERATOR_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/help/help.qhcp" -o "$<TARGET_FILE_DIR:${PROJECT_NAME}>/help.qhc"
-    #COMMENT "Running qhelpgenerator..."
+    COMMAND "${CMAKE_COMMAND}" -E env PATH="${_qt_bin_dir}" "${QHELPGENERATOR_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/help/help.qhcp" COMMENT "Running qhelpgenerator..."
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/help/help.qhc" "${CMAKE_CURRENT_SOURCE_DIR}/help/help.qch" "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
 )
