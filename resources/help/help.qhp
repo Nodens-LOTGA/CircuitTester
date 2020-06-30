@@ -15,6 +15,8 @@
                 <section title="Страдания юного Вертера" ref="doc.html#chapter2"/>
                 <section title="Кафка" ref="doc.html#chapter3"/>
             </section>
+			<section title="О программе" ref="about.html">
+			</section>
         </toc>
         <!--<keywords>
             <keyword name="Буквоград" ref="doc.html#foo"/>

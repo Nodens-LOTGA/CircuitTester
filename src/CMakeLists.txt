@@ -61,8 +61,9 @@ add_executable (${PROJECT_NAME}
   userslistdialog.ui
   spinboxdelegate.h
   spinboxdelegate.cpp
-  ../resources/resources.qrc
- "HelpBrowser.h" "HelpBrowser.cpp")
+  helpbrowser.h
+  helpbrowser.cpp
+  ../resources/resources.qrc)
 
 
 if(WIN32)
@@ -93,6 +94,6 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         env PATH="${_qt_bin_dir}" "${WINDEPLOYQT_EXECUTABLE}"
             "$<TARGET_FILE:${PROJECT_NAME}>"
     COMMENT "Running windeployqt..."
-    COMMAND "${CMAKE_COMMAND}" -E env PATH="${_qt_bin_dir}" "${QHELPGENERATOR_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/help/help.qhcp" COMMENT "Running qhelpgenerator..."
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/help/help.qhc" "${CMAKE_CURRENT_SOURCE_DIR}/help/help.qch" "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+    COMMAND "${CMAKE_COMMAND}" -E env PATH="${_qt_bin_dir}" "${QHELPGENERATOR_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/resources/help/help.qhcp" COMMENT "Running qhelpgenerator..."
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_SOURCE_DIR}/resources/help/help.qhc" "${CMAKE_SOURCE_DIR}/resources/help/help.qch" "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
 )
