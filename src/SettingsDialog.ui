@@ -49,7 +49,7 @@
         <widget class="QToolButton" name="addTB">
          <property name="icon">
           <iconset resource="../resources/resources.qrc">
-           <normaloff>:/icon/plus.png</normaloff>:/icon/plus.png</iconset>
+           <normaloff>:/img/plus.png</normaloff>:/img/plus.png</iconset>
          </property>
         </widget>
        </item>
@@ -57,7 +57,7 @@
         <widget class="QToolButton" name="delTB">
          <property name="icon">
           <iconset resource="../resources/resources.qrc">
-           <normaloff>:/icon/minus.png</normaloff>:/icon/minus.png</iconset>
+           <normaloff>:/img/minus.png</normaloff>:/img/minus.png</iconset>
          </property>
         </widget>
        </item>
@@ -144,7 +144,7 @@
        </property>
        <property name="icon">
         <iconset resource="../resources/resources.qrc">
-         <normaloff>:/icon/plus.png</normaloff>:/icon/plus.png</iconset>
+         <normaloff>:/img/plus.png</normaloff>:/img/plus.png</iconset>
        </property>
       </widget>
      </item>
@@ -155,7 +155,7 @@
        </property>
        <property name="icon">
         <iconset resource="../resources/resources.qrc">
-         <normaloff>:/icon/minus.png</normaloff>:/icon/minus.png</iconset>
+         <normaloff>:/img/minus.png</normaloff>:/img/minus.png</iconset>
        </property>
       </widget>
      </item>
@@ -166,7 +166,7 @@
        </property>
        <property name="icon">
         <iconset resource="../resources/resources.qrc">
-         <normaloff>:/icon/edit.png</normaloff>:/icon/edit.png</iconset>
+         <normaloff>:/img/edit.png</normaloff>:/img/edit.png</iconset>
        </property>
       </widget>
      </item>

@@ -63,7 +63,8 @@ add_executable (${PROJECT_NAME}
   spinboxdelegate.cpp
   helpbrowser.h
   helpbrowser.cpp
-  ../resources/resources.qrc)
+  ../resources/resources.qrc
+  ../resources/icon/icon.rc)
 
 
 if(WIN32)

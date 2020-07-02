@@ -1,6 +1,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/c++,qt,cmake,visualstudio,windows
 # Edit at https://www.toptal.com/developers/gitignore?templates=c++,qt,cmake,visualstudio,windows
 
+# Win32 resource files
+*.res
+
 # Qt Help Files
 *.qhc
 *.qch
