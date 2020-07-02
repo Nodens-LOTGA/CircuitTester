@@ -2,10 +2,8 @@
     <qresource prefix="/">
         <file>img/logo.png</file>
         <file>icon/icon.png</file>
-        <file>icon/minus.png</file>
-        <file>icon/plus.png</file>
-        <file>icon/checkbox_off.png</file>
-        <file>icon/checkbox_on.png</file>
-        <file>icon/edit.png</file>
+        <file>img/edit.png</file>
+        <file>img/minus.png</file>
+        <file>img/plus.png</file>
     </qresource>
 </RCC>

@@ -160,13 +160,13 @@ bool Report::createZplLabel(const QString &file, QByteArray &buf) {
   auto isoDate(date);
   isoDate.replace('.', '-');
   buf.replace("${NUM}",
-              QString::number(curNum).rightJustified(6, '0').toUtf8().data());
-  buf.replace("${PROD}", pn.toUtf8().data());
-  buf.replace("${DATE}", isoDate.toUtf8().data());
-  buf.replace("${TIME}", time.toUtf8().data());
+              QString::number(curNum).rightJustified(6, '0').toLocal8Bit());
+  buf.replace("${PROD}", pn.toLocal8Bit());
+  buf.replace("${DATE}", isoDate.toLocal8Bit());
+  buf.replace("${TIME}", time.toLocal8Bit());
   auto first = buf.indexOf("${C}");
   auto second = buf.indexOf("{/C}");
-  buf.replace(first, second - first + 4, code.toUtf8().data());
+  buf.replace(first, second - first + 4, code.toLocal8Bit());
   return true;
 }
 
