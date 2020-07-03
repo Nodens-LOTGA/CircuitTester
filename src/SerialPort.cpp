@@ -75,7 +75,7 @@ int SerialPort::write(const char *buffer, int size) {
   BOOL bWriteStat;
   DWORD dwBytesWritten;
 
-  bWriteStat = WriteFile(hComm, (LPSTR)&buffer, (DWORD)size, &dwBytesWritten,
+  bWriteStat = WriteFile(hComm, buffer, (DWORD)size, &dwBytesWritten,
                          &overlappedWrite);
   if (!bWriteStat && (GetLastError() == ERROR_IO_PENDING)) {
     if (WaitForSingleObject(overlappedWrite.hEvent, 1000))
@@ -89,7 +89,7 @@ int SerialPort::write(const char *buffer, int size) {
   return (int)dwBytesWritten;
 }
 
-int SerialPort::read(void *buffer, int limit) {
+int SerialPort::read(char *buffer, int limit) {
   if (!opened || hComm == NULL || hComm == INVALID_HANDLE_VALUE)
     return 0;
 
