@@ -10,11 +10,11 @@ public:
 public:
   ~SerialPort();
 
-  bool open(std::string, BaudRate = BaudRate::Baud115200,
+  bool open(std::string, BaudRate = BaudRate::Baud9600,
             DataBits = DataBits::Data8);
   bool close();
 
-  int read(void *buffer, int limit);
+  int read(char *buffer, int limit);
   int write(const char *buffer, int size);
 
   bool isOpened() { return (opened); }

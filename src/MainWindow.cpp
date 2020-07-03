@@ -28,6 +28,7 @@
 #include <QTableWidgetItem>
 #include <QToolButton>
 #include <QtSql>
+#include <QString>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -108,7 +109,7 @@ void MainWindow::start() {
     return;
   }
 
-  // report.checkAll(port);
+  report.checkAll(port);
   // TODO:
 
   QString dir = reportDir;
@@ -166,7 +167,7 @@ void MainWindow::settings() {
 
 void MainWindow::help() {
   HelpDialog helpDialog("help.qhc", this);
-  helpDialog.setWindowState(Qt::WindowFullScreen); 
+  helpDialog.setWindowState(Qt::WindowFullScreen);
   helpDialog.setGeometry(QGuiApplication::screens().first()->geometry());
   helpDialog.exec();
 }

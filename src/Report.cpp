@@ -225,7 +225,9 @@ bool Report::fill() {
 }
 
 bool rep::Report::checkAll(SerialPort &port) {
-  QByteArray rb, wb;
+  QByteArray wb{};
+  char rb[256]{};
+  int bytesRead{};
   const char cb[] = {0x23, 0x55, 0x48};
   for (auto &i : circuits) {
     for (auto &k : i) {
@@ -240,16 +242,16 @@ bool rep::Report::checkAll(SerialPort &port) {
           return false;
         }
         port.write(wb.data(), wb.size());
-        port.read(rb.data(), 255);
+        bytesRead = port.read(rb, 255);
         attempt++;
-        QThread::msleep(1 + 50 * attempt);
-      } while (!rb.startsWith(wb.left(4)));
-      for (int j = 4; j < rb.size(); j++) {
-        vertex_t v = pins[rb.at(j)];
+        QThread::msleep(50 * attempt);
+      } while (!(rb[0] == wb[0] && rb[1] == wb[1] && rb[2] == wb[2] && rb[3] == wb[3]));
+      for (int j = 4; j < bytesRead; j++) {
+        vertex_t v = pins[rb[j]];
         auto [e, exist] = boost::edge(k.first, v, graph);
         bool found{false};
         if (!exist) {
-          boost::array<vertex_t, 256> predecessors;
+          boost::array<vertex_t, 256> predecessors{};
           predecessors[k.first] = k.first;
           boost::breadth_first_search(
               graph, k.first,
