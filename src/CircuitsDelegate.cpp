@@ -16,8 +16,8 @@ QWidget *CircuitsDelegate::createEditor(QWidget *parent,
   if (column == 0 || column == 1) {
     QSpinBox *editor = new QSpinBox(parent);
     editor->setFrame(false);
-    editor->setMinimum(0);
-    editor->setMaximum(255);
+    editor->setMinimum(1);
+    editor->setMaximum(256);
     editor->setAlignment(Qt::AlignRight);
     return editor;
   } else if (column == 2) {

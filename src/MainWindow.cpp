@@ -109,7 +109,10 @@ void MainWindow::start() {
     return;
   }
 
-  report.checkAll(port);
+  if (!report.checkAll(port)) {
+    QMessageBox::warning(this, RU("Ошибка при проверки жгута"),
+                         RU("Превышен лимит ожидания от стэнда"));
+  }
   // TODO:
 
   QString dir = reportDir;
