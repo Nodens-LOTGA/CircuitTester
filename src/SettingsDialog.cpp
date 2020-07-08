@@ -117,7 +117,7 @@ void SettingsDialog::addItem() {
   QSqlQuery q;
   int tableId = ui->prodNameCB->currentData().toInt();
 
-  int lastPin{-1}, lastCircuit{-1};
+  int lastPin{0}, lastCircuit{0};
 
   if (!q.exec(QString("SELECT pin FROM circuits%1 ORDER BY pin").arg(tableId)))
     Sql::showSqlError(q.lastError());
