@@ -10,8 +10,8 @@ public:
 public:
   ~SerialPort();
 
-  bool open(std::string, BaudRate = BaudRate::Baud9600,
-            DataBits = DataBits::Data8);
+  bool open(std::string portName, bool overlapped = false, BaudRate baud = BaudRate::Baud9600,
+            DataBits dataBits = DataBits::Data8);
   bool close();
 
   int read(char *buffer, int limit);
@@ -23,4 +23,5 @@ private:
   HANDLE hComm = NULL;
   OVERLAPPED overlappedRead{}, overlappedWrite{};
   bool opened = false;
+  bool overlapped = false;
 };

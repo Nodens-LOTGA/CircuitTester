@@ -68,9 +68,9 @@ add_executable (${PROJECT_NAME}
 
 
 if(WIN32)
-    set_property(TARGET ${PROJECT_NAME} PROPERTY WIN32_EXECUTABLE true)
+    #set_property(TARGET ${PROJECT_NAME} PROPERTY WIN32_EXECUTABLE true)
 endif()
-target_compile_definitions(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Release>:QT_NO_DEBUG_OUTPUT>")
+target_compile_definitions(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Release>:QT_NO_DEBUG_OUTPUT>" "$<$<CONFIG:Release>:QT_NO_DEBUG>")
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
 

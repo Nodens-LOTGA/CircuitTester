@@ -25,7 +25,7 @@ QString Sql::relationsSql(int id) {
   return QString(
              "create table relations%1(id INTEGER PRIMARY KEY NOT NULL, num integer NOT NULL, "
              "pinFrom integer NOT NULL, pinTo integer NOT NULL, FOREIGN KEY (pinFrom) REFERENCES "
-             "circuits%1(pin) ON DELETE CASCADE, FOREIGN KEY (pinTo) REFERENCES circuits%1(pin) ON DELETE CASCADE)")
+             "circuits%1(pin) ON DELETE CASCADE ON UPDATE CASCADE, FOREIGN KEY (pinTo) REFERENCES circuits%1(pin) ON DELETE CASCADE ON UPDATE CASCADE)")
       .arg(id);
 }
 

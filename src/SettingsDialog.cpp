@@ -365,7 +365,7 @@ void SettingsDialog::updateCircuitsTable() {
 void SettingsDialog::pickLabel() {
   Settings sett;
   QStringList items;
-  int lastIndex;
+  int lastIndex{};
   auto i = sett.labels.constBegin();
   while (i != sett.labels.constEnd()) {
     items << i.key();
@@ -384,8 +384,9 @@ void SettingsDialog::pickLabel() {
 
 void SettingsDialog::editProd() {
   bool ok;
-  ProductInputDialog dialog(prodName.section(" ", 0, 0),
-                            prodName.section(" ", 1), this);
+  QString prN = ui->prodNameCB->currentText();
+  ProductInputDialog dialog(prN.section(" ", 0, 0),
+                            prN.section(" ", 1), this);
   dialog.exec();
 
   if (!dialog.result() == QDialog::Accepted)
