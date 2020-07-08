@@ -14,6 +14,9 @@
 #include <QTextStream>
 #include <QTime>
 #include <boost/graph/breadth_first_search.hpp>
+#include <boost/graph/graph_utility.hpp>
+#include <boost/graph/visitors.hpp>
+#include <boost/property_map/property_map.hpp>
 
 using namespace rep;
 
@@ -59,29 +62,31 @@ QTableWidget *Report::createTableWidget(QWidget *parent, QSize size,
   addRow(table, 7, RU("Результат проверки"), "");
   addRow(table, 8, RU("Замеряемые параметры"), "");
 
-  QVector<QPair<QString, QString>> errorStrings;
+  QSet<QPair<QString, QString>> errorStrings;
   bool internalError = false;
   int rowIndex = 9;
   auto i = circuits.constBegin();
   while (i != circuits.constEnd()) {
     for (auto &j : i.value()) {
-      edge_t e = boost::edge(j.first, j.second, graph).first;
-      auto status = boost::get(&Edge::status, graph, e);
-      if (status != Status::Ok) {
-        internalError = true;
-        typename boost::graph_traits<Graph>::out_edge_iterator out_i, out_end;
-        for (std::tie(out_i, out_end) = boost::out_edges(j.first, graph);
-             out_i != out_end; out_i++) {
-          auto stat = boost::get(&Edge::status, graph, *out_i);
-          if (stat != Status::Ok)
-            errorStrings.push_back(
-                QPair(statusToQStr(stat),
-                      graph[j.first].name + ":" +
-                          QString::number(graph[j.first].circuit) + RU(" - ") +
-                          graph[j.second].name + ":" +
-                          QString::number(graph[j.second].circuit)));
+      // edge_t e = boost::edge(j.first, j.second, graph).first;
+      // auto status = boost::get(&Edge::status, graph, e);
+      // if (status != Status::Ok) {
+      typename boost::graph_traits<Graph>::out_edge_iterator out_i, out_end;
+      for (std::tie(out_i, out_end) = boost::out_edges(j.first, graph);
+           out_i != out_end; out_i++) {
+        auto stat = boost::get(&Edge::status, graph, *out_i);
+        if (stat != Status::Ok) {
+          internalError = true;
+          auto target = boost::target(*out_i, graph);
+          auto source = boost::source(*out_i, graph);
+          errorStrings.insert(QPair(
+              statusToQStr(stat), graph[source].name + ":" +
+                                      QString::number(graph[source].circuit) +
+                                      RU(" - ") + graph[target].name + ":" +
+                                      QString::number(graph[target].circuit)));
         }
       }
+      //}
     }
     addRow(table, rowIndex, RU("Цепь № ") + QString::number(i.key()),
            internalError ? statusToQStr(Status::Error)
@@ -225,53 +230,91 @@ bool Report::fill() {
 }
 
 bool rep::Report::checkAll(SerialPort &port) {
-  QByteArray wb{};
-  char rb[256]{};
+  char rb[256]{}, wb[5];
   int bytesRead{};
   const char cb[] = {0x23, 0x55, 0x48};
   for (auto &i : circuits) {
     for (auto &k : i) {
-      wb.clear();
-      wb.append(cb);
-      wb += graph[k.first].pin;
-      wb += graph[k.second].pin;
+      memset(rb, 0, sizeof(rb));
+      memset(wb, 0, sizeof(wb));
+      memcpy(wb, cb, sizeof(cb));
+      wb[3] = graph[k.first].pin;
+      wb[4] = graph[k.second].pin;
       int attempt{};
       do {
         if (attempt == 3) {
           // TODO:
           return false;
         }
-        port.write(wb.data(), wb.size());
-        bytesRead = port.read(rb, 255);
+        port.write(wb, sizeof(wb));
+        QThread::msleep(250 * (attempt + 1));
+        bytesRead = port.read(rb, 256);
         attempt++;
-        QThread::msleep(50 * attempt);
-      } while (!(rb[0] == wb[0] && rb[1] == wb[1] && rb[2] == wb[2] && rb[3] == wb[3]));
-      for (int j = 4; j < bytesRead; j++) {
+      } while (!(rb[0] == wb[0] && rb[1] == wb[1] && rb[2] == wb[2] &&
+                 rb[3] == wb[3]));
+
+      std::vector<vertex_t> predecessors(boost::num_vertices(graph), -1);
+      predecessors[k.first] = k.first;
+      boost::breadth_first_search(
+          graph, k.first,
+          boost::visitor(boost::make_bfs_visitor(boost::record_predecessors(
+              &predecessors[0], boost::on_tree_edge()))));
+#ifndef QT_NO_DEBUG_OUTPUT
+      std::cout << "\nGraph Before:\n";
+      boost::print_graph(graph);
+      std::cout << "Vertex: " << k.first << " : " << (int)graph[k.first].pin
+                << "\nPredecessors:";
+      for (auto &i : predecessors)
+        std::cout << i << " ";
+      std::cout << "\n";
+#endif
+      for (int j = 4; j < bytesRead; j++) { //Поиск полученных контактов в цепи
+        if (!pins.contains(rb[j])) { //Если контакт не известен - замыкание
+          vertex_t w = boost::add_vertex(
+              Vertex{RU("?(КС:") + QString::number(rb[j]) + ")", -1, rb[j]},
+              graph);
+          boost::add_edge(k.first, w, Edge{Status::Short}, graph);
+          continue;
+        }
         vertex_t v = pins[rb[j]];
-        auto [e, exist] = boost::edge(k.first, v, graph);
+        auto [e, exist] = boost::edge(k.first, v, graph); //Проверка связи
         bool found{false};
-        if (!exist) {
-          boost::array<vertex_t, 256> predecessors{};
-          predecessors[k.first] = k.first;
-          boost::breadth_first_search(
-              graph, k.first,
-              boost::visitor(boost::make_bfs_visitor(boost::record_predecessors(
-                  predecessors.begin(), boost::on_tree_edge{}))));
-          for (auto &n : predecessors)
-            if (n == v) {
-              found = true;
-              break;
-            }
-          if (!found) {
+        if (!exist) { //Если такой связи нет
+          if (predecessors[v] != -1) //Поиск среди достигаемых контактов
+            found = true;
+          if (!found) { //Если контакт не достигаем - замыкание
             boost::add_edge(k.first, v, Edge{Status::Short}, graph);
+            continue;
           }
         }
+        //Связь, которая должна быть проверена/контакт достигаема?
         if (exist || found) {
-          auto [e1, notexist] = boost::add_edge(k.first, v, Edge{Status::Ok}, graph);
-          if (!notexist)
-            graph[e1].status = Status::Ok;
+          Status pStatus = Status::Ok;
+          if (found) { //Достигаем? Статус = Годен/Замыкание
+            pStatus =
+                graph[boost::edge(v, predecessors[v], graph).first].status;
+            pStatus = (pStatus == Status::Open ? Status::Ok : pStatus);
+          }
+          //Добавляем связь с достигаемым контактом
+          auto [e1, added] = boost::add_edge(k.first, v, Edge{pStatus}, graph);
+          if (!added) { //Если связь сущесвует
+            //И это связь, которая должна быть проверена
+            if (graph[e1].status == Status::Open)
+              //Меняем статус на "Годен" ("Обрыв" останется в том случае, если с
+              //порта не пришло необходимого контатка
+              graph[e1].status = Status::Ok;
+          }
         }
       }
+      if (std::find(rb + 4, rb + bytesRead, graph[k.second].pin) ==
+          rb + bytesRead) {
+        graph[boost::edge(k.first, k.second, graph).first].status =
+            Status::Open;
+      }
+#ifndef QT_NO_DEBUG_OUTPUT
+      std::cout << "Graph After:\n";
+      boost::print_graph(graph);
+#endif
     }
   }
   return true;
