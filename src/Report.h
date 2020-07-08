@@ -10,7 +10,12 @@
 
 namespace rep {
 
-enum class Status { Ok, Error, Short = Error | 2, Open = Error | 4 };
+enum class Status {
+  Ok,
+  Error,
+  Short = Error | 2,
+  Open = Error | 4
+};
 
 static QString statusToQStr(const Status stat) {
   switch (stat) {
