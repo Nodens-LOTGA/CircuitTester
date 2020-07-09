@@ -76,9 +76,9 @@ void MainWindow::init() {
 
   // TODO:
 
-  if (!port.open(ui->portL->text().toStdString())) {
+  if (!port.open(ui->portL->text().toStdString(), false, SerialPort::BaudRate::Baud115200)) {
     QMessageBox::warning(this, RU("Ошибка порта"),
-                         RU("Неудалось открыть порт"));
+                         RU("Не удалось открыть порт"));
     QTimer::singleShot(0, this, [this]() { exit(false); });
   }
 
@@ -109,6 +109,11 @@ void MainWindow::start() {
     return;
   }
 
+  if (!port.reopen()) {
+    QMessageBox::warning(this, RU("Ошибка порта"),
+                         RU("Не удалось открыть порт"));
+    return;
+  }
   if (!report.checkAll(port)) {
     QMessageBox::warning(this, RU("Ошибка при проверки жгута"),
                          RU("Превышен лимит ожидания от стэнда"));
