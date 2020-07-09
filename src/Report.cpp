@@ -69,19 +69,19 @@ QTableWidget *Report::createTableWidget(QWidget *parent, QSize size,
   auto i = circuits.constBegin();
   while (i != circuits.constEnd()) {
     for (auto &j : i.value()) {
-      typename boost::graph_traits<Graph>::edge_iterator out_i, out_end;
-      for (std::tie(out_i, out_end) = boost::edges(graph);
+      typename boost::graph_traits<Graph>::out_edge_iterator out_i, out_end;
+      for (std::tie(out_i, out_end) = boost::out_edges(j.first, graph);
            out_i != out_end; out_i++) {
         auto stat = boost::get(&Edge::status, graph, *out_i);
         if (stat != Status::Ok) {
           internalError = true;
           auto target = boost::target(*out_i, graph);
           auto source = boost::source(*out_i, graph);
-          errorStrings.insert(QPair(
-              statusToQStr(stat), graph[source].name + ":" +
-                                      QString::number(graph[source].circuit) +
-                                      RU(" - ") + graph[target].name + ":" +
-                                      QString::number(graph[target].circuit)));
+          QString s1 =
+              graph[source].name + ":" + QString::number(graph[source].circuit);
+          QString s2 =
+              graph[target].name + ":" + QString::number(graph[target].circuit);    
+          errorStrings.insert(QPair(statusToQStr(stat), std::min(s1, s2) + RU(" - ") + std::max(s1, s2)));
         }
       }
     }
@@ -96,10 +96,13 @@ QTableWidget *Report::createTableWidget(QWidget *parent, QSize size,
   }
   table->item(7, 1)->setText(error ? statusToQStr(Status::Error)
                                    : statusToQStr(Status::Ok));
+  
   if (error) {
+    QList<QPair<QString, QString>> list = errorStrings.toList();
+    std::sort(list.begin(), list.end());
     table->setRowCount(++rowCount);
     addRow(table, rowCount - 1, RU("Неисправности"), RU("Разъём, контакт"));
-    for (auto &i : errorStrings) {
+    for (auto &i : list) {
       table->setRowCount(++rowCount);
       addRow(table, rowCount - 1, i.first, i.second);
     }
@@ -206,7 +209,7 @@ bool Report::fill() {
                   .arg(tableId)))
     Sql::showSqlError(q.lastError());
   while (q.next()) {
-    char pin = static_cast<char>(q.value(0).toInt());
+    auto pin = static_cast<unsigned char>(q.value(0).toInt());
     vertex_t v = boost::add_vertex(
         Vertex{q.value(2).toString(), q.value(1).toInt(), pin}, graph);
     pins[pin] = v;
@@ -216,8 +219,8 @@ bool Report::fill() {
               .arg(tableId)))
     Sql::showSqlError(q.lastError());
   while (q.next()) {
-    char pinFrom = static_cast<char>(q.value(1).toInt());
-    char pinTo = static_cast<char>(q.value(2).toInt());
+    auto pinFrom = static_cast<unsigned char>(q.value(1).toInt());
+    auto pinTo = static_cast<unsigned char>(q.value(2).toInt());
     auto v1 = pins[pinFrom];
     auto v2 = pins[pinTo];
     boost::add_edge(v1, v2, graph);
@@ -227,17 +230,19 @@ bool Report::fill() {
 }
 
 bool rep::Report::checkAll(SerialPort &port) {
-  char rb[256]{}, wb[5];
-  int bytesRead{};
-  const char cb[] = {0x23, 0x55, 0x48};
-#ifndef QT_NO_DEBUG_INPUT
+  unsigned char rb[256]{}, wb[5];
+  unsigned int bytesRead{};
+  const unsigned char cb[] = {0x23, 0x55, 0x48};
+#ifndef QT_NO_DEBUG_OUTPUT
   auto tstart = std::chrono::high_resolution_clock::now();
 #endif
   for (auto &i : circuits) {
     for (auto &k : i) {
-#ifndef QT_NO_DEBUG_INPUT
+
+#ifndef QT_NO_DEBUG_OUTPUT
       auto tstart = std::chrono::high_resolution_clock::now();
 #endif
+
       memset(rb, 0, sizeof(rb));
       memset(wb, 0, sizeof(wb));
       memcpy(wb, cb, sizeof(cb));
@@ -259,15 +264,18 @@ bool rep::Report::checkAll(SerialPort &port) {
           attempt++;
         }
       }
+
 #ifndef QT_NO_DEBUG_OUTPUT
       auto treadend = std::chrono::high_resolution_clock::now();
 #endif
+
       std::vector<vertex_t> predecessors(boost::num_vertices(graph), -1);
       predecessors[k.first] = k.first;
       boost::breadth_first_search(
           graph, k.first,
           boost::visitor(boost::make_bfs_visitor(boost::record_predecessors(
               &predecessors[0], boost::on_tree_edge()))));
+
 #ifndef QT_NO_DEBUG_OUTPUT
       std::cout << "\nGraph Before:\n";
       boost::print_graph(graph);
@@ -277,28 +285,30 @@ bool rep::Report::checkAll(SerialPort &port) {
         std::cout << i << " ";
       std::cout << "\n";
 #endif
-      for (int j = 4; j < bytesRead; j++) { //Поиск полученных контактов в цепи
-        if (!pins.contains(rb[j])) { //Если контакт не известен - замыкание
+
+      for (int j = 4; j < bytesRead; j++) { 
+        if (!pins.contains(rb[j])) { 
           vertex_t w = boost::add_vertex(
-              Vertex{RU("?(КС:") + QString::number(rb[j]) + ")?", 0, rb[j]},
+              Vertex{RU("~КС:") + QString::number(rb[j]) + "~", 0, rb[j]},
               graph);
           boost::add_edge(k.first, w, Edge{Status::Short}, graph);
           continue;
         }
         vertex_t v = pins[rb[j]];
-        auto [e, exist] = boost::edge(k.first, v, graph); //Проверка связи
+        auto [e, exist] = boost::edge(k.first, v, graph); 
         bool found{false};
-        if (!exist) { //Если такой связи нет
-          if (predecessors[v] != -1) //Поиск среди достигаемых контактов
+        if (!exist) { 
+          if (predecessors[v] != -1) 
             found = true;
-          else { //Если контакт не достигаем - замыкание
+          else { 
             boost::add_edge(k.first, v, Edge{Status::Short}, graph);
             continue;
           }
         }
         if (found) {
-          auto pStatus = graph[boost::edge(v, predecessors[v], graph).first].status;
-          if (pStatus != Status::Open && pStatus != Status::Ok) 
+          auto pStatus =
+              graph[boost::edge(v, predecessors[v], graph).first].status;
+          if (pStatus != Status::Open && pStatus != Status::Ok)
             boost::add_edge(k.first, v, Edge{pStatus}, graph);
         }
       }
@@ -310,8 +320,8 @@ bool rep::Report::checkAll(SerialPort &port) {
         found = false;
       }
       if (found)
-        graph[boost::edge(k.first, k.second, graph).first].status =
-            Status::Ok;
+        graph[boost::edge(k.first, k.second, graph).first].status = Status::Ok;
+
 #ifndef QT_NO_DEBUG_OUTPUT
       auto tfinish = std::chrono::high_resolution_clock::now();
       std::cout << "Graph After:\n";
@@ -322,12 +332,15 @@ bool rep::Report::checkAll(SerialPort &port) {
                 << std::chrono::duration<double>(tfinish - treadend).count()
                 << "\n";
 #endif
+
     }
   }
+
 #ifndef QT_NO_DEBUG_OUTPUT
   auto tfinish = std::chrono::high_resolution_clock::now();
   std::cout << "Total Elapsed Time: "
             << std::chrono::duration<double>(tfinish - tstart).count() << "\n";
 #endif
+
   return true;
 }

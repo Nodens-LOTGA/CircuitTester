@@ -68,7 +68,9 @@ add_executable (${PROJECT_NAME}
 
 
 if(WIN32)
-    #set_property(TARGET ${PROJECT_NAME} PROPERTY WIN32_EXECUTABLE true)
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        set_property(TARGET ${PROJECT_NAME} PROPERTY WIN32_EXECUTABLE true)
+    endif()
 endif()
 target_compile_definitions(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Release>:QT_NO_DEBUG_OUTPUT>" "$<$<CONFIG:Release>:QT_NO_DEBUG>")
 

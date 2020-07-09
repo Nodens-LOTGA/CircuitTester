@@ -33,7 +33,7 @@ static QString statusToQStr(const Status stat) {
 struct Vertex {
   QString name;
   int circuit;
-  char pin;
+  unsigned char pin;
 };
 
 struct Edge {
@@ -69,7 +69,7 @@ private:
 
 private:
   QMap<int, QVector<QPair<vertex_t, vertex_t>>> circuits;
-  QMap<char, vertex_t> pins;
+  QMap<unsigned char, vertex_t> pins;
   Graph graph;
   int curNum{};
   QString prodName{}, name{}, date{}, time{};

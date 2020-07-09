@@ -58,6 +58,9 @@ bool SerialPort::open(std::string portName, bool overlapped, BaudRate baud,
 
   opened = true;
   this->overlapped = overlapped;
+  this->portName = portName;
+  this->baudRate = baud;
+  this->dataBits = dataBits;
   return opened;
 }
 
@@ -78,7 +81,12 @@ bool SerialPort::close() {
   return true;
 }
 
-int SerialPort::write(const char *buffer, int size) {
+bool SerialPort::reopen() {
+  close();
+  return open(portName, overlapped, baudRate, dataBits);
+}
+
+int SerialPort::write(const unsigned char *buffer, int size) {
   if (!opened || hComm == NULL || hComm == INVALID_HANDLE_VALUE)
     return 0;
 
@@ -103,7 +111,7 @@ int SerialPort::write(const char *buffer, int size) {
   return (int)dwBytesWritten;
 }
 
-int SerialPort::read(char *buffer, int limit) {
+int SerialPort::read(unsigned char *buffer, int limit) {
   if (!opened || hComm == NULL || hComm == INVALID_HANDLE_VALUE)
     return 0;
 
