@@ -16,11 +16,11 @@ bool SerialPort::open(std::string portName, bool overlapped, BaudRate baud,
   }
 
   COMMTIMEOUTS timeouts{};
-  timeouts.ReadIntervalTimeout = overlapped ? MAXDWORD : 5000;
-  timeouts.ReadTotalTimeoutConstant = overlapped ? 0 : 1000;
-  timeouts.ReadTotalTimeoutMultiplier = overlapped ? 0 : 100;
-  timeouts.WriteTotalTimeoutMultiplier = overlapped ? 0 : 100;
-  timeouts.WriteTotalTimeoutConstant = 5000;
+  timeouts.ReadIntervalTimeout = overlapped ? MAXDWORD : 25;
+  timeouts.ReadTotalTimeoutConstant = overlapped ? 0 : 1;
+  timeouts.ReadTotalTimeoutMultiplier = overlapped ? 0 : 1;
+  timeouts.WriteTotalTimeoutMultiplier = overlapped ? 0 : 1;
+  timeouts.WriteTotalTimeoutConstant = 25;
   SetCommTimeouts(hComm, &timeouts);
 
   if (overlapped) {
@@ -115,19 +115,19 @@ int SerialPort::read(unsigned char *buffer, int limit) {
   if (!opened || hComm == NULL || hComm == INVALID_HANDLE_VALUE)
     return 0;
 
-  BOOL bReadStatus;
-  DWORD dwBytesRead, dwErrorFlags;
-  COMSTAT ComStat;
-
-  ClearCommError(hComm, &dwErrorFlags, &ComStat);
-  if (!ComStat.cbInQue)
-    return 0;
-
-  dwBytesRead = (DWORD)ComStat.cbInQue;
-  if (limit < (int)dwBytesRead)
-    dwBytesRead = (DWORD)limit;
-
   if (overlapped) {
+    BOOL bReadStatus;
+    DWORD dwBytesRead, dwErrorFlags;
+    COMSTAT ComStat;
+
+    ClearCommError(hComm, &dwErrorFlags, &ComStat);
+    if (!ComStat.cbInQue)
+      return 0;
+
+    dwBytesRead = (DWORD)ComStat.cbInQue;
+    if (limit < (int)dwBytesRead)
+      dwBytesRead = (DWORD)limit;
+
     bReadStatus =
         ReadFile(hComm, buffer, dwBytesRead, &dwBytesRead, &overlappedRead);
     if (!bReadStatus) {
@@ -137,8 +137,23 @@ int SerialPort::read(unsigned char *buffer, int limit) {
       }
       return 0;
     }
-  } else
-    ReadFile(hComm, buffer, dwBytesRead, &dwBytesRead, NULL);
-
-  return (int)dwBytesRead;
+    return (int)dwBytesRead;
+  } else {
+    DWORD dwEventMask, dwBytesRead;
+    int count{};
+    if (!SetCommMask(hComm, EV_RXCHAR))
+      return 0;
+    if (WaitCommEvent(hComm, &dwEventMask, NULL)) {
+      unsigned char szBuf;
+      do {
+        if (ReadFile(hComm, &szBuf, sizeof(szBuf), &dwBytesRead, NULL) != 0) {
+          if (dwBytesRead > 0) {
+            buffer[count++] = szBuf;
+          }
+        } else
+          return 0;
+      } while (dwBytesRead > 0 && count < limit);
+    }
+    return (int)count;
+  }
 }
