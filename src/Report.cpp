@@ -80,8 +80,10 @@ QTableWidget *Report::createTableWidget(QWidget *parent, QSize size,
           QString s1 =
               graph[source].name + ":" + QString::number(graph[source].circuit);
           QString s2 =
-              graph[target].name + ":" + QString::number(graph[target].circuit);    
-          errorStrings.insert(QPair(statusToQStr(stat), std::min(s1, s2) + RU(" - ") + std::max(s1, s2)));
+              graph[target].name + ":" + QString::number(graph[target].circuit);
+          errorStrings.insert(
+              QPair(statusToQStr(stat),
+                    std::min(s1, s2) + RU(" - ") + std::max(s1, s2)));
         }
       }
     }
@@ -96,7 +98,7 @@ QTableWidget *Report::createTableWidget(QWidget *parent, QSize size,
   }
   table->item(7, 1)->setText(error ? statusToQStr(Status::Error)
                                    : statusToQStr(Status::Ok));
-  
+
   if (error) {
     QList<QPair<QString, QString>> list = errorStrings.toList();
     std::sort(list.begin(), list.end());
@@ -230,52 +232,57 @@ bool Report::fill() {
 }
 
 bool rep::Report::checkAll(SerialPort &port) {
-  unsigned char rb[256]{}, wb[5];
+  unsigned char rb[256]{}, wb[256]{};
   unsigned int bytesRead{};
   const unsigned char cb[] = {0x23, 0x55, 0x48};
 #ifndef QT_NO_DEBUG_OUTPUT
-  auto tstart = std::chrono::high_resolution_clock::now();
+  auto ttotalstart = std::chrono::high_resolution_clock::now();
 #endif
   for (auto &i : circuits) {
+#ifndef QT_NO_DEBUG_OUTPUT
+    auto treadstart = std::chrono::high_resolution_clock::now();
+#endif
+    memset(rb, 0, sizeof(rb));
+    memset(wb, 0, sizeof(wb));
+    memcpy(wb, cb, sizeof(cb));
+    QMap<unsigned char, QVector<unsigned char>> circuitPins;
+    int n{3};
     for (auto &k : i) {
-
-#ifndef QT_NO_DEBUG_OUTPUT
-      auto tstart = std::chrono::high_resolution_clock::now();
-#endif
-
-      memset(rb, 0, sizeof(rb));
-      memset(wb, 0, sizeof(wb));
-      memcpy(wb, cb, sizeof(cb));
-      wb[3] = graph[k.first].pin;
-      wb[4] = graph[k.second].pin;
-      int attempt{};
-      while (true) {
-        if (attempt == 3) {
-          // TODO:
-          return false;
-        }
-        port.write(wb, sizeof(wb));
-        bytesRead = port.read(rb, 256);
-        if ((rb[0] == wb[0] && rb[1] == wb[1] && rb[2] == wb[2] &&
-             rb[3] == wb[3]))
-          break;
-        else {
-          QThread::msleep(50 * (attempt + 1));
-          attempt++;
-        }
+      circuitPins.insert(graph[k.first].pin, QVector<unsigned char>());
+      wb[n++] = graph[k.first].pin;
+    }
+    int attempt{};
+    while (true) {
+      if (attempt == 3) {
+        // TODO:
+        return false;
       }
-
+      port.write(wb, n);
+      bytesRead = port.read(rb, 256);
+      if (rb[0] == wb[0] && rb[1] == wb[1] && rb[2] == wb[2])
+        break;
+      else {
+        QThread::msleep(50 * (attempt + 1));
+        attempt++;
+      }
+    }
+    for (int k = 4, p = 3; k < bytesRead; k++) {
+      if (rb[k] == ';') {
+        p = ++k;
+      } else
+        circuitPins[rb[p]] += rb[k];
+    }
 #ifndef QT_NO_DEBUG_OUTPUT
-      auto treadend = std::chrono::high_resolution_clock::now();
+    auto treadend = std::chrono::high_resolution_clock::now();
+    auto tlinkingend = treadend;
 #endif
-
+    for (auto &k : i) {
       std::vector<vertex_t> predecessors(boost::num_vertices(graph), -1);
       predecessors[k.first] = k.first;
       boost::breadth_first_search(
           graph, k.first,
           boost::visitor(boost::make_bfs_visitor(boost::record_predecessors(
               &predecessors[0], boost::on_tree_edge()))));
-
 #ifndef QT_NO_DEBUG_OUTPUT
       std::cout << "\nGraph Before:\n";
       boost::print_graph(graph);
@@ -285,22 +292,21 @@ bool rep::Report::checkAll(SerialPort &port) {
         std::cout << i << " ";
       std::cout << "\n";
 #endif
-
-      for (int j = 4; j < bytesRead; j++) { 
-        if (!pins.contains(rb[j])) { 
+      for (auto &j : circuitPins[graph[k.first].pin]) {
+        if (!pins.contains(j)) {
           vertex_t w = boost::add_vertex(
-              Vertex{RU("~КС:") + QString::number(rb[j]) + "~", 0, rb[j]},
+              Vertex{RU("~КС:") + QString::number(j) + "~", 0, j},
               graph);
           boost::add_edge(k.first, w, Edge{Status::Short}, graph);
           continue;
         }
-        vertex_t v = pins[rb[j]];
-        auto [e, exist] = boost::edge(k.first, v, graph); 
+        vertex_t v = pins[j];
+        auto [e, exist] = boost::edge(k.first, v, graph);
         bool found{false};
-        if (!exist) { 
-          if (predecessors[v] != -1) 
+        if (!exist) {
+          if (predecessors[v] != -1)
             found = true;
-          else { 
+          else {
             boost::add_edge(k.first, v, Edge{Status::Short}, graph);
             continue;
           }
@@ -312,34 +318,32 @@ bool rep::Report::checkAll(SerialPort &port) {
             boost::add_edge(k.first, v, Edge{pStatus}, graph);
         }
       }
-      bool found{true};
-      if (std::find(rb + 4, rb + bytesRead, graph[k.second].pin) ==
-          rb + bytesRead) {
+      if (circuitPins[graph[k.first].pin].contains(graph[k.second].pin))
+        graph[boost::edge(k.first, k.second, graph).first].status = Status::Ok;
+      else
         graph[boost::edge(k.first, k.second, graph).first].status =
             Status::Open;
-        found = false;
-      }
-      if (found)
-        graph[boost::edge(k.first, k.second, graph).first].status = Status::Ok;
 
 #ifndef QT_NO_DEBUG_OUTPUT
-      auto tfinish = std::chrono::high_resolution_clock::now();
       std::cout << "Graph After:\n";
       boost::print_graph(graph);
-      std::cout << "Elapsed Time:\n  Read:"
-                << std::chrono::duration<double>(treadend - tstart).count()
-                << "\n  Processing:"
-                << std::chrono::duration<double>(tfinish - treadend).count()
-                << "\n";
 #endif
-
     }
+#ifndef QT_NO_DEBUG_OUTPUT
+    auto tfinish = std::chrono::high_resolution_clock::now();
+    std::cout << "Elapsed Time:\n  Read:"
+              << std::chrono::duration<double>(treadend - treadstart).count()
+              << "\n  Processing:"
+              << std::chrono::duration<double>(tfinish - treadend).count()
+              << "\n";
+#endif
   }
 
 #ifndef QT_NO_DEBUG_OUTPUT
-  auto tfinish = std::chrono::high_resolution_clock::now();
+  auto ttotalfinish = std::chrono::high_resolution_clock::now();
   std::cout << "Total Elapsed Time: "
-            << std::chrono::duration<double>(tfinish - tstart).count() << "\n";
+            << std::chrono::duration<double>(ttotalfinish - ttotalstart).count()
+            << "\n";
 #endif
 
   return true;
