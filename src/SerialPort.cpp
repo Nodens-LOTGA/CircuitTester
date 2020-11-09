@@ -120,6 +120,20 @@ int SerialPort::read(unsigned char *buffer, int limit) {
     DWORD dwBytesRead, dwErrorFlags;
     COMSTAT ComStat;
 
+    DWORD dwEventMask;
+    if (!SetCommMask(hComm, EV_RXCHAR))
+      return 0;
+
+    if (!WaitCommEvent(hComm, &dwEventMask, &overlappedRead))
+      if (GetLastError() != ERROR_IO_PENDING)
+        return 0;
+    switch (WaitForSingleObject(overlappedRead.hEvent, 1000)) {
+    case WAIT_OBJECT_0:
+      break;
+    default:
+      return 0;
+    }
+
     ClearCommError(hComm, &dwErrorFlags, &ComStat);
     if (!ComStat.cbInQue)
       return 0;
@@ -127,7 +141,6 @@ int SerialPort::read(unsigned char *buffer, int limit) {
     dwBytesRead = (DWORD)ComStat.cbInQue;
     if (limit < (int)dwBytesRead)
       dwBytesRead = (DWORD)limit;
-
     bReadStatus =
         ReadFile(hComm, buffer, dwBytesRead, &dwBytesRead, &overlappedRead);
     if (!bReadStatus) {
